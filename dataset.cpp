@@ -89,11 +89,11 @@ cv::Mat Dataset::get_sample(size_t index) const
 {
     CV_Assert(index < size());
     cv::Mat img = cv::imread(sample_images_[index], cv::IMREAD_GRAYSCALE);
-    // resize to 128x128 if image is not empty (standard size for pollen dataset)
-    if (!img.empty() && (img.rows != 128 || img.cols != 128))
+    // resize to 64x64 to reduce memory usage (was 128x128)
+    if (!img.empty() && (img.rows != 64 || img.cols != 64))
     {
         cv::Mat resized;
-        cv::resize(img, resized, cv::Size(128, 128));
+        cv::resize(img, resized, cv::Size(64, 64));
         return resized;
     }
     return img;
