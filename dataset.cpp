@@ -48,6 +48,16 @@ bool Dataset::load(const std::string &folder,
 
         if (std::getline(line_stream, image_filename, ',') && line_stream >> label)
         {
+            // remove quotes from filename if present
+            if (!image_filename.empty() && image_filename[0] == '"')
+            {
+                image_filename = image_filename.substr(1);
+            }
+            if (!image_filename.empty() && image_filename.back() == '"')
+            {
+                image_filename = image_filename.substr(0, image_filename.length() - 1);
+            }
+            
             std::string image_path = folder + "/" + image_filename;
             sample_images_.push_back(image_path);
             sample_labels_.push_back(class_name_to_id_[label]);
