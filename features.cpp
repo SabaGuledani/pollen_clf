@@ -60,7 +60,12 @@ fsiv_extract_features(const Dataset &dt,
     CV_Assert(dt.size() > 0);
 
     // Process the first image to get the features dimension.
-    cv::Mat feature = extractor->extract_features(dt.get_sample(0));
+    cv::Mat first_sample = dt.get_sample(0);
+    if (first_sample.empty())
+    {
+        throw std::runtime_error("Error: first sample image is empty. Check image path: " + dt.get_sample_filename(0));
+    }
+    cv::Mat feature = extractor->extract_features(first_sample);
 
     // Allocate memory.
     cv::Mat X(dt.size(), feature.cols, CV_32F);
@@ -69,16 +74,35 @@ fsiv_extract_features(const Dataset &dt,
     y.at<int>(0, 0) = dt.get_label(0);
 
     // Process the rest of dt.
-#ifdef USE_OPENMP
-#pragma omp parallel for
-#endif
+    // Note: OpenMP disabled to avoid recursive termination on errors
+    // #ifdef USE_OPENMP
+    // #pragma omp parallel for
+    // #endif
     for (size_t i = 1; i < dt.size(); ++i)
     {
         cv::Mat sample;
         int label;
         std::tie(sample, label) = dt[i];
-        extractor->extract_features(sample).copyTo(X.row(i));
-        y.at<int>(int(i), 0) = label;
+        if (sample.empty())
+        {
+            std::cerr << "Error: sample " << i << " is empty. File: " << dt.get_sample_filename(i) << std::endl;
+            throw std::runtime_error("Empty image at index " + std::to_string(i) + ": " + dt.get_sample_filename(i));
+        }
+        try
+        {
+            extractor->extract_features(sample).copyTo(X.row(i));
+            y.at<int>(int(i), 0) = label;
+        }
+        catch (cv::Exception &e)
+        {
+            std::cerr << "OpenCV error processing sample " << i << ": " << dt.get_sample_filename(i) << std::endl;
+            std::cerr << "Error: " << e.what() << std::endl;
+            throw;
+        }
+        if (i % 1000 == 0)
+        {
+            std::cout << "Processed " << i << " / " << dt.size() << " samples..." << std::endl;
+        }
     }
     return std::make_tuple(X, y);
 }
