@@ -51,6 +51,7 @@ GrayLevelsFeatures::extract_features(const cv::Mat &img)
     //
     CV_Assert(features.rows == 1);
     CV_Assert(features.type() == CV_32FC1);
+    CV_Assert(features.cols > 0);
     return features;
 }
 
