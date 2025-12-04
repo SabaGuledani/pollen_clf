@@ -24,3 +24,18 @@ public:
     // virtual bool save_model(std::string const& fname) const;
     // virtual bool load_model(std::string const& fname);
 };
+
+/**
+ * @brief Extract normalized gray level features from an image.
+ * 
+ * Function to extract normalized gray level features from grayscale image.
+ * Normalizes pixel values to [0,1] range.
+ * 
+ * @param img the input grayscale image.
+ * @return the extracted features as a row vector (1x(W*H)).
+ * @pre !img.empty()
+ * @pre img.channels() == 1
+ * @post ret_v.type() == CV_32FC1
+ * @post ret_v.rows == 1
+ */
+cv::Mat fsiv_extract_01_normalized_graylevels(const cv::Mat &img);

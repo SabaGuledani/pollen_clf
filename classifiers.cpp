@@ -10,7 +10,14 @@ fsiv_create_knn_classifier(int K)
     // Set it as a classifier (setIsClassifier)
     // Set hyperparameter K.
 
-    //
+    // create KNN classifier
+    knn = cv::ml::KNearest::create();
+    // use brute force algorithm
+    knn->setAlgorithmType(cv::ml::KNearest::BRUTE_FORCE);
+    // set as classifier (not regression)
+    knn->setIsClassifier(true);
+    // set K parameter
+    knn->setDefaultK(K);
 
     CV_Assert(knn != nullptr);
     return knn;
@@ -54,7 +61,9 @@ void fsiv_train_classifier(cv::Ptr<cv::ml::StatModel> &clf,
     CV_Assert(clf != nullptr);
     // TODO: train the classifier.
 
-    //
+    // train with samples X and labels y
+    clf->train(X, cv::ml::ROW_SAMPLE, y);
+
     CV_Assert(clf->isTrained());
 }
 
@@ -68,7 +77,11 @@ fsiv_predict_labels(cv::Ptr<cv::ml::StatModel> &clf, cv::Mat const &X)
     // TODO: compute the predictions.
     // Remember: convert the type of predicted labels to int32.
 
-    //
+    // predict labels for samples
+    clf->predict(X, predictions);
+    // convert to int32 type
+    predictions.convertTo(predictions, CV_32SC1);
+
     CV_Assert(predictions.rows == X.rows);
     CV_Assert(predictions.type() == CV_32SC1);
     return predictions;
@@ -102,7 +115,8 @@ fsiv_load_knn_classifier_model(const std::string &model_fname)
     // TODO: load a KNN classifier.
     // Hint: use the generic interface cv::Algorithm::load< classifier_type >
 
-    //
+    // load KNN classifier from file
+    clsf = cv::Algorithm::load<cv::ml::KNearest>(model_fname);
 
     CV_Assert(clsf != nullptr);
     return clsf;

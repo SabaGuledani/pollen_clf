@@ -42,8 +42,24 @@ GrayLevelsFeatures::extract_features(const cv::Mat &img)
     // Remember: the output type must be CV_32F.
     // Hint: use cv::Mat::reshape() method to pass from WxH to 1xW*H row vector.
 
+    // normalize image to range 0-1, convert to float
+    cv::normalize(img, features, 0.0, 1.0, cv::NORM_MINMAX, CV_32F);
+    
+    // reshape to row vector (1 row, all pixels in one row)
+    features = features.reshape(1, 1);
+
     //
     CV_Assert(features.rows == 1);
     CV_Assert(features.type() == CV_32FC1);
     return features;
+}
+
+cv::Mat fsiv_extract_01_normalized_graylevels(const cv::Mat &img)
+{
+    CV_Assert(!img.empty());
+    CV_Assert(img.channels() == 1);
+    
+    // just use the GrayLevelsFeatures class to extract features
+    GrayLevelsFeatures extractor;
+    return extractor.extract_features(img);
 }
