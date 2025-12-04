@@ -85,8 +85,13 @@ fsiv_extract_features(const Dataset &dt,
         std::tie(sample, label) = dt[i];
         if (sample.empty())
         {
-            std::cerr << "Error: sample " << i << " is empty. File: " << dt.get_sample_filename(i) << std::endl;
-            throw std::runtime_error("Empty image at index " + std::to_string(i) + ": " + dt.get_sample_filename(i));
+            std::cerr << "Warning: sample " << i << " is empty (file not found or corrupted). File: " << dt.get_sample_filename(i) << std::endl;
+            std::cerr << "Skipping this sample and using zeros for features." << std::endl;
+            // use zeros for missing images (same size as first feature)
+            cv::Mat zero_features = cv::Mat::zeros(1, feature.cols, CV_32FC1);
+            zero_features.copyTo(X.row(i));
+            y.at<int>(int(i), 0) = label;
+            continue;
         }
         try
         {

@@ -42,23 +42,43 @@ bool Dataset::load(const std::string &folder,
     // Load images/labels line by line
     while (std::getline(label_file, line))
     {
-        std::stringstream line_stream(line);
+        // parse CSV with proper quote handling
         std::string image_filename;
         std::string label;
-
-        if (std::getline(line_stream, image_filename, ',') && line_stream >> label)
+        
+        size_t comma_pos = line.find_last_of(',');
+        if (comma_pos == std::string::npos)
+            continue;
+        
+        // get label (after last comma)
+        label = line.substr(comma_pos + 1);
+        // trim whitespace from label
+        while (!label.empty() && (label[0] == ' ' || label[0] == '\t'))
+            label = label.substr(1);
+        while (!label.empty() && (label.back() == ' ' || label.back() == '\t' || label.back() == '\r'))
+            label = label.substr(0, label.length() - 1);
+        
+        // get filename (before last comma, handle quotes)
+        image_filename = line.substr(0, comma_pos);
+        // remove quotes if present
+        if (!image_filename.empty() && image_filename[0] == '"')
         {
-            // remove quotes from filename if present
-            if (!image_filename.empty() && image_filename[0] == '"')
+            image_filename = image_filename.substr(1);
+        }
+        if (!image_filename.empty() && image_filename.back() == '"')
+        {
+            image_filename = image_filename.substr(0, image_filename.length() - 1);
+        }
+        
+        if (!image_filename.empty() && !label.empty())
+        {
+            // fix double slashes and ensure proper path
+            std::string image_path = folder;
+            if (!folder.empty() && folder.back() != '/')
             {
-                image_filename = image_filename.substr(1);
+                image_path += "/";
             }
-            if (!image_filename.empty() && image_filename.back() == '"')
-            {
-                image_filename = image_filename.substr(0, image_filename.length() - 1);
-            }
-            
-            std::string image_path = folder + "/" + image_filename;
+            image_path += image_filename;
             sample_images_.push_back(image_path);
             sample_labels_.push_back(class_name_to_id_[label]);
         }
