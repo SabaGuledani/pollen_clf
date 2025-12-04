@@ -1,0 +1,18 @@
+* 1.0
+- Nov/2024: adaptación al caso del dataset Pollen (15 clases) de la práctica 
+  fashin_mnist por mjmarin para el curso 24/25.
+* 1.1
+- Add VSCode configuration files for C++ development.
+- Adding ctest.
+- Dataset format updated to include train and validation data into a only partition in 
+  folder 'train/' and use set names 'train', 'valid', 'train_total'. The folder
+  'test/' only has a set 'test'.
+- Created a Dataset class to load the dataset.
+- Generated a new Dataset "mini_pollen" which is a cropped version to 
+  a 64x64 image-centered window of the original samples.
+- train program adapted to the new dataset format.
+- test program adapted to the new dataset format.
+- show_BAA500 adapted to the new dataset format.
+- show_BAA500 now allow to show only one class too.
+- Now the feature extractor model can be saved/loaded from a file to reuse it while tunning classifier parameters.
+- Improved CLI of train_clf to show a list of available feature extractors.

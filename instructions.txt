@@ -1,0 +1,113 @@
+Image categorization: Pollen grains
+
+Objectives:
+To understand the difference between types of classifiers.
+To select the best hyperparameters for a model.
+To use performance metrics in classification.
+
+For validating your code, use the samples provided in Moodle.
+
+1. Description
+
+Our goal is to train a model to distinguish between N categories of pollen grains. In particular, the ones included in the SYLVA data portal:
+https://data.sylva.bioaerosol.eu/referenceDatasets 
+
+
+This dataset consists of 30,000 (24,000 train/ 3,000 validation /3,000 test) grayscale images of size 128x128 (or 64x64), categorised into 15 classes: alnus, betula, carpinus, corylus, cupressaceae, fagus, fraxinus, picea, pinus, poaceae, populus, quercus, salix, tilia, urticaceae.
+
+2. How to create my feature extractor
+
+There is a base class `FeaturesExtractor` defined in `features.hpp` that your extractor must inherit from. You can use the `GrayLevelsFeatures` extractor defined in `gray_levels_features.hpp` and `gray_levels_features.cpp` as a template.
+Suppose you want to define a new extractor called `MyExtractor`. Copy the files `gray_levels_features.hpp` and `gray_levels_features.cpp` with the new names `my_extractor.hpp` and `my_extractor.cpp`, respectively.
+Now, replace the name of the class `GrayLevelsFeatures` with `MyExtractor` in both files.
+Next, you need to add a new constant to the `FEATURE_IDS` enumeration in `features.hpp`, using the next available integer to identify your extractor:
+
+typedef enum {
+	FSIV_NON_EXTRACTOR=0, //None extractor is used.
+	FSIV_GREY_LEVELS=1, // Use pixel grey levels [0,1].
+	FSIV_MI_EXTRACTOR=2,
+	//TODO: Add new features to extract.
+	//FSIV_XXXXX=2,
+	//FSIV_YYYYY=3,
+	//....
+} FEATURE_IDS;
+
+
+In the file `features.cpp`, you need to make two changes:
+1. You must include the header file `my_extractor.hpp`.
+
+// TODO: add the include for each extractor to use.
+// Hint: use gray_levels_features.hpp and gray_levels_features.cpp as model to
+//   make yours.
+#include "gray_levels_features.hpp"
+#include "mi_extractor.hpp"
+//#inlude "xxxxxx.hpp"
+
+// Remember: update CMakeLists.txt with the new files.
+//
+
+
+2. You should add the creation of an instance of your extractor in the FeaturesExtractor::create() method:
+
+cv::Ptr<FeaturesExtractor> FeaturesExtractor::create(FEATURE_IDS id)
+{
+	cv::Ptr<FeaturesExtractor> extractor;
+	switch (id) {
+    	case FSIV_GREY_LEVELS:
+    	{
+        	extractor = cv::makePtr<GrayLevelsFeatures>();
+        	break;
+    	}
+    	case FSIV_MI_EXTRACTOR:
+    	{
+        	extractor = cv::makePtr<MiExtractor>();
+        	break;
+    	}
+
+    	// TODO: add here 'cases' for your features.
+    	// case FSIV_XXXXX: {
+    	//	extractor = cv::makePtr<FeatureExtractor>(new XXXXX());
+    	//	break;
+    	// }
+    	//
+
+
+Additionally, in the project file CMakeLists.txt, you must add the files you just created with the definition of your extractor to the common_code library:
+
+add_library(common_code STATIC
+	common_code.hpp
+	dataset.cpp dataset.hpp
+	classifiers.cpp classifiers.hpp
+	metrics.cpp metrics.hpp
+	features.cpp features.hpp
+	gray_levels_features.hpp gray_levels_features.cpp
+	mi_extractor.hpp mi_extractor.cpp
+#TODO: add your feature extractors files here.
+)
+
+
+Now, all that's left is for you to write the code for the implementation of your extractor:
+
+1. Method `std::string get_extractor_name() const;`: Override this method to return a text with the name of your extractor.
+
+2. Method `cv::Mat extract_features(const cv::Mat& img);`: Override this method to extract your features. For example, you can try equalizing the image and returning the levels [0,1], using histograms, reducing dimensionality with PCA, or a texture feature like LBP, HOG, etc. As you can see, you have many alternatives. Remember that you have a vector of parameters (`params_`) loaded from the command line if needed to parameterise your descriptor by the user. For instance, if you calculate histograms by dividing the image into an FxC grid, the amount of variance to retain if you use PCA, etc.
+
+3. Method `void train(const cv::Mat& samples);`: It is optional to override it and depends on the extractor you implement. For example, if you use PCA, you need to train the `cv::PCA` algorithm beforehand to apply it later to extract the features.
+
+4. Method `bool save_model(std::string const& fname) const;`: It is optional to override and depends on whether you had to train your descriptor and need to store the trained data. If you override it, it is important that the first thing you do is call the superclass version like this `::save(fname)`. If you save data in the file, you should use labels like "fsiv_mi_descriptor_xxxx" to avoid collisions with others already in the file. Tip: use the YML file format.
+
+5. Method `bool load_model(std::string const& fname);`: It is optional to override and depends on whether you had to store the training data for the descriptor and need to load it for testing. If you override it, you should first call the superclass version like this `::load(fname)`.
+
+3. Scoring
+The evaluation for the assignment will be as follows:
+Up to 2 points based on the code correctness and quality.
+Up to 5 points proportional to the maximum score reported in the public Kaggle ranking.
+Up to 2 points based on the following items:
+Implementing additional feature extractors.
+[COMPULSORY] Writing a PDF report that displays and discusses training results using plots and tables. The expected sections of the report are: Problem Definition, Proposed Descriptors, Experiments and Results, and Conclusions. Try to answer the following question in the final section: What is the best combination of descriptor and classifier? Note: avoid plain screenshots of the terminal. 
+[COMPULSORY] Up to 1 point for explanations in the video defence.
+Each component contributes to the overall evaluation of your work, and the maximum total score is 10 points. The assignment will be graded with 0 points if the compulsory items are not provided.
+4. Resources
+OpenCV docs: https://docs.opencv.org/4.3.0/ 
+
+
