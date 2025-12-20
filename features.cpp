@@ -14,6 +14,7 @@
 //   make yours.
 #include "gray_levels_features.hpp"
 #include "lbp_extractor.hpp"
+#include "hog_extractor.hpp"
 // #include "xxxxxx.hpp"
 
 // Remember: update CMakeLists.txt with the new files.
@@ -38,6 +39,11 @@ cv::Ptr<FeaturesExtractor> FeaturesExtractor::create(FEATURE_IDS id)
     case FSIV_LBP_HISTOGRAM:
     {
         extractor = cv::makePtr<LbpExtractor>();
+        break;
+    }
+    case FSIV_HOG:
+    {
+        extractor = cv::makePtr<HogExtractor>();
         break;
     }
 

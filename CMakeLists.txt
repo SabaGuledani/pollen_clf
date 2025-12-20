@@ -29,6 +29,7 @@ add_library(common_code STATIC common_code.hpp
   features.cpp features.hpp
   gray_levels_features.hpp gray_levels_features.cpp
   lbp_extractor.hpp lbp_extractor.cpp
+  hog_extractor.hpp hog_extractor.cpp
 
   # Add your feature extractors modules here
 
