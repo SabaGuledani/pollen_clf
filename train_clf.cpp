@@ -3,6 +3,8 @@
 #include <exception>
 #include <time.h>
 #include <stdlib.h>
+#include <fstream>
+#include <iomanip>
 
 // Includes para OpenCV, Descomentar según los módulo utilizados.
 #include <opencv2/core/core.hpp>
@@ -58,6 +60,112 @@ parse_feature_params(const std::string &f_params)
       feature_params.push_back(v);
   }
   return feature_params;
+}
+
+std::string
+format_feature_params(const std::vector<float> &params)
+{
+  std::ostringstream oss;
+  for (size_t i = 0; i < params.size(); ++i)
+  {
+    if (i > 0)
+      oss << " ";
+    oss << params[i];
+  }
+  return oss.str();
+}
+
+std::string
+get_classifier_name(int classifier)
+{
+  switch (classifier)
+  {
+  case 0:
+    return "KNN";
+  case 1:
+    return "SVM";
+  case 2:
+    return "RTrees";
+  default:
+    return "Unknown";
+  }
+}
+
+std::string
+get_classifier_params(int classifier, int knn_K, float svm_C, int svm_K, float svm_D, float svm_G,
+                      int rtrees_V, int rtrees_T, double rtrees_E)
+{
+  std::ostringstream oss;
+  switch (classifier)
+  {
+  case 0:
+    oss << "K=" << knn_K;
+    break;
+  case 1:
+    oss << "C=" << svm_C << " K=" << svm_K << " D=" << svm_D << " G=" << svm_G;
+    break;
+  case 2:
+    oss << "V=" << rtrees_V << " T=" << rtrees_T << " E=" << rtrees_E;
+    break;
+  }
+  return oss.str();
+}
+
+bool
+write_experiment_results(const std::string &csv_file,
+                         const std::string &classifier_name,
+                         const std::string &classifier_params,
+                         const std::string &extractor_name,
+                         const std::string &extractor_params,
+                         float train_accuracy,
+                         float valid_accuracy,
+                         const std::string &model_fname)
+{
+  bool file_exists = false;
+  std::ifstream check_file(csv_file);
+  if (check_file.good())
+  {
+    file_exists = true;
+  }
+  check_file.close();
+
+  std::ofstream out_file(csv_file, std::ios::app);
+  if (!out_file.is_open())
+  {
+    std::cerr << "Warning: Could not open CSV file for writing: " << csv_file << std::endl;
+    return false;
+  }
+
+  // Write header if file is new
+  if (!file_exists)
+  {
+    out_file << "Timestamp,Classifier,Classifier_Params,Extractor,Extractor_Params,"
+             << "Train_Accuracy,Valid_Accuracy,Test_Accuracy,Model_Filename" << std::endl;
+  }
+
+  // Get current timestamp
+  time_t rawtime;
+  struct tm *timeinfo;
+  char buffer[80];
+  time(&rawtime);
+  timeinfo = localtime(&rawtime);
+  strftime(buffer, sizeof(buffer), "%Y-%m-%d %H:%M:%S", timeinfo);
+  std::string timestamp(buffer);
+
+  // Write data row
+  out_file << std::fixed << std::setprecision(6);
+  out_file << timestamp << ","
+           << classifier_name << ","
+           << "\"" << classifier_params << "\","
+           << extractor_name << ","
+           << "\"" << extractor_params << "\","
+           << train_accuracy << ","
+           << (valid_accuracy >= 0.0f ? std::to_string(valid_accuracy) : "N/A") << ","
+           << "N/A" << ","  // Test accuracy (computed separately, can be filled manually)
+           << model_fname << std::endl;
+
+  out_file.close();
+  return true;
 }
 
 int main(int argc, char *const *argv)
@@ -224,19 +332,20 @@ int main(int argc, char *const *argv)
     std::cout << "Computing training accuracy ... ";
     cv::Mat predict_labels = fsiv_predict_labels(clsf, X_t);
     cv::Mat cmat = fsiv_compute_confusion_matrix(y_t, predict_labels, 15);
-    float acc = fsiv_compute_accuracy(cmat);
+    float train_acc = fsiv_compute_accuracy(cmat);
     std::cout << "done." << std::endl;
-    std::cout << "Training accuracy: " << acc << std::endl;
+    std::cout << "Training accuracy: " << train_acc << std::endl;
     std::cout << std::endl;
 
+    float valid_acc = -1.0f;
     if (!X_v.empty())
     {
       std::cout << "Validating ... ";
       predict_labels = fsiv_predict_labels(clsf, X_v);
       std::cout << "done." << std::endl;
       cmat = fsiv_compute_confusion_matrix(y_v, predict_labels, 15);
-      acc = fsiv_compute_accuracy(cmat);
-      std::cout << "Validation accuracy: " << acc << std::endl;
+      valid_acc = fsiv_compute_accuracy(cmat);
+      std::cout << "Validation accuracy: " << valid_acc << std::endl;
       std::cout << std::endl;
     }
 
@@ -261,10 +370,30 @@ int main(int argc, char *const *argv)
       std::cout << "Size score max(0.0, 1.0-(model_size_mb/dataset_size_mb)) = "
                 << size_score << std::endl;
       std::cout << "Predicted final score 2*(acc*size_score)/(acc+size_score) = "
-                << (2.0 * acc * size_score) / (acc + size_score) << std::endl;
+                << (2.0 * train_acc * size_score) / (train_acc + size_score) << std::endl;
     }
     else
       throw std::runtime_error("Error: could not open the file " + model_fname);
+
+    // Write experiment results to CSV
+    std::string csv_file = "experiment_results.csv";
+    std::string classifier_name = get_classifier_name(classifier);
+    std::string classifier_params = get_classifier_params(classifier, knn_K, svm_C, svm_K, svm_D, svm_G,
+                                                          rtrees_V, rtrees_T, rtrees_E);
+    std::string extractor_name = extractor->get_extractor_name();
+    std::string extractor_params = format_feature_params(extractor->get_params());
+    
+    std::cout << std::endl;
+    std::cout << "Saving experiment results to " << csv_file << " ... ";
+    if (write_experiment_results(csv_file, classifier_name, classifier_params, extractor_name,
+                                  extractor_params, train_acc, valid_acc, model_fname))
+    {
+      std::cout << "done." << std::endl;
+    }
+    else
+    {
+      std::cout << "failed." << std::endl;
+    }
   }
   catch (std::exception &e)
   {
