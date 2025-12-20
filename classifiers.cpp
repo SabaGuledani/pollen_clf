@@ -39,8 +39,6 @@ fsiv_create_svm_classifier(int Kernel,
     svm = cv::ml::SVM::create();
     // set type to C_SVC (multi-class classification)
     svm->setType(cv::ml::SVM::C_SVC);
-    // set as classifier (not regression)
-    svm->isClassifier(true);
     // set C parameter (regularization parameter)
     svm->setC(C);
     
