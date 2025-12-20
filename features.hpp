@@ -21,13 +21,13 @@ public:
     typedef enum
     {
         FSIV_01_GREY_LEVELS = 0,
+        FSIV_LBP_HISTOGRAM = 1,
         // TODO: Add new features to extract.
-        // FSIV_MEAN_STDDEV_GREY_LEVELS = 1,
-        // FSIV_LBP_HISTOGRAM = 2,
+        // FSIV_MEAN_STDDEV_GREY_LEVELS = 2,
         // FSIV_HOG = 3,
         // FSIV_BOVW = 4,
         //....
-        FSIV_NEXT_FEATURE_ID = 1 // Update this value when a new feature is added.
+        FSIV_NEXT_FEATURE_ID = 2 // Update this value when a new feature is added.
     } FEATURE_IDS;
 
     /**

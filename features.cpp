@@ -13,6 +13,7 @@
 // Hint: use gray_levels_features.hpp and gray_levels_features.cpp as model to
 //   make yours.
 #include "gray_levels_features.hpp"
+#include "lbp_extractor.hpp"
 // #include "xxxxxx.hpp"
 
 // Remember: update CMakeLists.txt with the new files.
@@ -32,6 +33,11 @@ cv::Ptr<FeaturesExtractor> FeaturesExtractor::create(FEATURE_IDS id)
     case FSIV_01_GREY_LEVELS:
     {
         extractor = cv::makePtr<GrayLevelsFeatures>();
+        break;
+    }
+    case FSIV_LBP_HISTOGRAM:
+    {
+        extractor = cv::makePtr<LbpExtractor>();
         break;
     }
 
