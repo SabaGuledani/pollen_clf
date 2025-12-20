@@ -54,6 +54,22 @@ LbpHogExtractor::extract_features(const cv::Mat &img)
     CV_Assert(!img.empty());
     CV_Assert(img.channels() == 1);
     
+    // Preprocess: Apply histogram equalization to enhance contrast
+    // This improves feature extraction by normalizing image brightness
+    cv::Mat img_preprocessed;
+    if (img.type() == CV_8UC1)
+    {
+        // Direct histogram equalization for 8-bit images
+        cv::equalizeHist(img, img_preprocessed);
+    }
+    else
+    {
+        // Convert to 8-bit first, then equalize
+        cv::Mat img_8bit;
+        img.convertTo(img_8bit, CV_8UC1);
+        cv::equalizeHist(img_8bit, img_preprocessed);
+    }
+    
     // Parse parameters
     // LBP parameters (first 4)
     float lbp_radius = (params_.size() > 0) ? params_[0] : 1.0f;
@@ -62,27 +78,27 @@ LbpHogExtractor::extract_features(const cv::Mat &img)
     int lbp_grid_cols = (params_.size() > 3) ? static_cast<int>(params_[3]) : 1;
     
     // HOG parameters (next 6)
-    int hog_win_width = (params_.size() > 4) ? static_cast<int>(params_[4]) : img.cols;
-    int hog_win_height = (params_.size() > 5) ? static_cast<int>(params_[5]) : img.rows;
+    int hog_win_width = (params_.size() > 4) ? static_cast<int>(params_[4]) : img_preprocessed.cols;
+    int hog_win_height = (params_.size() > 5) ? static_cast<int>(params_[5]) : img_preprocessed.rows;
     int hog_block_size = (params_.size() > 6) ? static_cast<int>(params_[6]) : 16;
     int hog_block_stride = (params_.size() > 7) ? static_cast<int>(params_[7]) : 8;
     int hog_cell_size = (params_.size() > 8) ? static_cast<int>(params_[8]) : 8;
     int hog_nbins = (params_.size() > 9) ? static_cast<int>(params_[9]) : 9;
     
-    // Extract LBP features
+    // Extract LBP features from preprocessed image
     LbpExtractor lbp_extractor;
     std::vector<float> lbp_params = {lbp_radius, static_cast<float>(lbp_neighbors), 
                                      static_cast<float>(lbp_grid_rows), static_cast<float>(lbp_grid_cols)};
     lbp_extractor.set_params(lbp_params);
-    cv::Mat lbp_features = lbp_extractor.extract_features(img);
+    cv::Mat lbp_features = lbp_extractor.extract_features(img_preprocessed);
     
-    // Extract HOG features
+    // Extract HOG features from preprocessed image
     HogExtractor hog_extractor;
     std::vector<float> hog_params = {static_cast<float>(hog_win_width), static_cast<float>(hog_win_height),
                                       static_cast<float>(hog_block_size), static_cast<float>(hog_block_stride),
                                       static_cast<float>(hog_cell_size), static_cast<float>(hog_nbins)};
     hog_extractor.set_params(hog_params);
-    cv::Mat hog_features = hog_extractor.extract_features(img);
+    cv::Mat hog_features = hog_extractor.extract_features(img_preprocessed);
     
     // Normalize each feature type independently (L2 normalization)
     // This ensures both feature types contribute equally
