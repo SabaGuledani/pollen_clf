@@ -87,9 +87,9 @@ fsiv_extract_features(const Dataset &dt,
 
     // Process the rest of dt.
     // Note: OpenMP disabled to avoid recursive termination on errors
-    // #ifdef USE_OPENMP
-    // #pragma omp parallel for
-    // #endif
+    #ifdef USE_OPENMP
+    #pragma omp parallel for
+    #endif
     for (size_t i = 1; i < dt.size(); ++i)
     {
         cv::Mat sample;
