@@ -119,6 +119,9 @@ write_experiment_results(const std::string &csv_file,
                          const std::string &extractor_params,
                          float train_accuracy,
                          float valid_accuracy,
+                         float model_size_mb,
+                         float size_score,
+                         float predicted_final_score,
                          const std::string &model_fname)
 {
   bool file_exists = false;
@@ -140,7 +143,7 @@ write_experiment_results(const std::string &csv_file,
   if (!file_exists)
   {
     out_file << "Timestamp,Classifier,Classifier_Params,Extractor,Extractor_Params,"
-             << "Train_Accuracy,Valid_Accuracy,Test_Accuracy,Model_Filename" << std::endl;
+             << "Train_Accuracy,Valid_Accuracy,Test_Accuracy,Model_Size_MB,Size_Score,Predicted_Final_Score,Model_Filename" << std::endl;
   }
 
   // Get current timestamp
@@ -162,6 +165,9 @@ write_experiment_results(const std::string &csv_file,
            << train_accuracy << ","
            << (valid_accuracy >= 0.0f ? std::to_string(valid_accuracy) : "N/A") << ","
            << "N/A" << ","  // Test accuracy (computed separately, can be filled manually)
+           << model_size_mb << ","
+           << size_score << ","
+           << predicted_final_score << ","
            << model_fname << std::endl;
 
   out_file.close();
@@ -362,15 +368,20 @@ int main(int argc, char *const *argv)
 
     // Third, compute model size.
     size_t model_size = 0;
+    float model_size_mb = 0.0f;
+    float size_score = 0.0f;
+    float predicted_final_score = 0.0f;
+    
     if (fsiv_compute_file_size(model_fname, model_size))
     {
-      float model_size_mb = model_size / (1024.0 * 1024.0);
+      model_size_mb = model_size / (1024.0 * 1024.0);
       std::cout << "Model size: " << model_size_mb << " Mb." << std::endl;
-      float size_score = std::max(0.0, 1.0 - (model_size_mb / (4.0 * 45.06)));
+      size_score = std::max(0.0, 1.0 - (model_size_mb / (4.0 * 45.06)));
       std::cout << "Size score max(0.0, 1.0-(model_size_mb/dataset_size_mb)) = "
                 << size_score << std::endl;
+      predicted_final_score = (2.0 * train_acc * size_score) / (train_acc + size_score);
       std::cout << "Predicted final score 2*(acc*size_score)/(acc+size_score) = "
-                << (2.0 * train_acc * size_score) / (train_acc + size_score) << std::endl;
+                << predicted_final_score << std::endl;
     }
     else
       throw std::runtime_error("Error: could not open the file " + model_fname);
@@ -386,7 +397,8 @@ int main(int argc, char *const *argv)
     std::cout << std::endl;
     std::cout << "Saving experiment results to " << csv_file << " ... ";
     if (write_experiment_results(csv_file, classifier_name, classifier_params, extractor_name,
-                                  extractor_params, train_acc, valid_acc, model_fname))
+                                  extractor_params, train_acc, valid_acc, model_size_mb, 
+                                  size_score, predicted_final_score, model_fname))
     {
       std::cout << "done." << std::endl;
     }
