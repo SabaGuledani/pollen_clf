@@ -35,7 +35,48 @@ fsiv_create_svm_classifier(int Kernel,
     // Set it as a classifier (setIsClassifier)
     // Set hyperparameters: C, kernel, Gamma, Degree.
 
-    //
+    // create SVM classifier
+    svm = cv::ml::SVM::create();
+    // set type to C_SVC (multi-class classification)
+    svm->setType(cv::ml::SVM::C_SVC);
+    // set as classifier (not regression)
+    svm->setIsClassifier(true);
+    // set C parameter (regularization parameter)
+    svm->setC(C);
+    
+    // set kernel type and kernel-specific parameters
+    switch (Kernel)
+    {
+    case 0: // Linear kernel
+        svm->setKernel(cv::ml::SVM::LINEAR);
+        break;
+    case 1: // Polynomial kernel
+        svm->setKernel(cv::ml::SVM::POLY);
+        svm->setDegree(degree);
+        svm->setGamma(gamma);
+        break;
+    case 2: // RBF kernel (best for image classification with histogram features)
+        svm->setKernel(cv::ml::SVM::RBF);
+        svm->setGamma(gamma);
+        break;
+    case 3: // Sigmoid kernel
+        svm->setKernel(cv::ml::SVM::SIGMOID);
+        svm->setGamma(gamma);
+        break;
+    case 4: // CHI2 kernel
+        svm->setKernel(cv::ml::SVM::CHI2);
+        svm->setGamma(gamma);
+        break;
+    case 5: // INTER (intersection) kernel
+        svm->setKernel(cv::ml::SVM::INTER);
+        break;
+    default:
+        // Default to RBF if unknown kernel type
+        svm->setKernel(cv::ml::SVM::RBF);
+        svm->setGamma(gamma);
+        break;
+    }
+
     CV_Assert(svm != nullptr);
     return svm;
 }
@@ -130,7 +171,8 @@ fsiv_load_svm_classifier_model(const std::string &model_fname)
     // TODO: load a SVM classifier.
     // Hint: use the generic interface cv::Algorithm::load< classifier_type >
 
-    //
+    // load SVM classifier from file
+    clsf = cv::Algorithm::load<cv::ml::SVM>(model_fname);
 
     CV_Assert(clsf != nullptr);
     return clsf;
