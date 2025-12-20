@@ -4,7 +4,6 @@
  */
 #include <opencv2/imgproc.hpp>
 #include <opencv2/core.hpp>
-#include <opencv2/core/pca.hpp>
 #include "pca_extractor.hpp"
 #include "lbp_hog_extractor.hpp"
 
