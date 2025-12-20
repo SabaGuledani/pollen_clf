@@ -24,11 +24,12 @@ public:
         FSIV_LBP_HISTOGRAM = 1,
         FSIV_HOG = 2,
         FSIV_LBP_HOG = 3,
+        FSIV_PCA = 4,
         // TODO: Add new features to extract.
-        // FSIV_MEAN_STDDEV_GREY_LEVELS = 4,
-        // FSIV_BOVW = 5,
+        // FSIV_MEAN_STDDEV_GREY_LEVELS = 5,
+        // FSIV_BOVW = 6,
         //....
-        FSIV_NEXT_FEATURE_ID = 4 // Update this value when a new feature is added.
+        FSIV_NEXT_FEATURE_ID = 5 // Update this value when a new feature is added.
     } FEATURE_IDS;
 
     /**

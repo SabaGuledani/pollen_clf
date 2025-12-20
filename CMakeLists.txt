@@ -31,6 +31,7 @@ add_library(common_code STATIC common_code.hpp
   lbp_extractor.hpp lbp_extractor.cpp
   hog_extractor.hpp hog_extractor.cpp
   lbp_hog_extractor.hpp lbp_hog_extractor.cpp
+  pca_extractor.hpp pca_extractor.cpp
 
   # Add your feature extractors modules here
 
