@@ -11,9 +11,12 @@ static std::string name_{"PCA Feature Extractor"};
 static std::string help_{
     "  This extractor applies Principal Component Analysis (PCA) to reduce\n"
     "  dimensionality of features from a base extractor (e.g., LBP+HOG).\n"
-    "  Parameters: [base_extractor_id] [variance_retained]\n"
+    "  Parameters: [base_extractor_id] [variance_retained] [base_extractor_params...]\n"
     "    - base_extractor_id: ID of base extractor to use (0=GrayLevels, 1=LBP, 2=HOG, 3=LBP+HOG, default: 3)\n"
     "    - variance_retained: Fraction of variance to retain (0.0-1.0, default: 0.95)\n"
+    "    - base_extractor_params: Optional parameters for the base extractor\n"
+    "      For LBP+HOG (id=3): [lbp_radius] [lbp_neighbors] [lbp_grid_rows] [lbp_grid_cols] [hog_win_width] [hog_win_height] [hog_block_size] [hog_block_stride] [hog_cell_size] [hog_nbins]\n"
+    "  Example: \"3 0.95 1.5 6 2 2 64 64 32 16 16 9\" (PCA with LBP+HOG custom params)\n"
     "  Note: This extractor requires training before use.\n"};
 
 const std::string &
@@ -59,6 +62,15 @@ PcaExtractor::train(const Dataset &dt)
     
     base_extractor_id_ = static_cast<FeaturesExtractor::FEATURE_IDS>(base_id);
     base_extractor_ = FeaturesExtractor::create(base_extractor_id_);
+    
+    // Extract base extractor parameters (if provided)
+    // Parameters start from index 2 (after base_id and variance_retained)
+    if (params_.size() > 2)
+    {
+        std::vector<float> base_params(params_.begin() + 2, params_.end());
+        base_extractor_->set_params(base_params);
+        std::cout << "Base extractor parameters: " << base_extractor_->get_params() << std::endl;
+    }
     
     // Extract features from all training samples
     std::cout << "Extracting base features for PCA training..." << std::endl;
@@ -204,6 +216,14 @@ PcaExtractor::load_model(std::string const &fname)
     f["fsiv_pca_base_extractor_id"] >> base_id;
     base_extractor_id_ = static_cast<FeaturesExtractor::FEATURE_IDS>(base_id);
     base_extractor_ = FeaturesExtractor::create(base_extractor_id_);
+    
+    // Restore base extractor parameters (if provided)
+    // Parameters start from index 2 (after base_id and variance_retained)
+    if (params_.size() > 2)
+    {
+        std::vector<float> base_params(params_.begin() + 2, params_.end());
+        base_extractor_->set_params(base_params);
+    }
     
     f["fsiv_pca_trained"] >> trained_;
     
