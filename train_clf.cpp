@@ -102,7 +102,13 @@ get_classifier_params(int classifier, int knn_K, float svm_C, int svm_K, float s
     oss << "K=" << knn_K;
     break;
   case 1:
-    oss << "C=" << svm_C << " K=" << svm_K << " D=" << svm_D << " G=" << svm_G;
+    oss << "K=" << svm_K << " C=" << svm_C;
+    // Add kernel-specific parameters
+    if (svm_K == 1) // Polynomial
+      oss << " D=" << svm_D << " G=" << svm_G;
+    else if (svm_K == 2 || svm_K == 3 || svm_K == 4) // RBF, Sigmoid, CHI2
+      oss << " G=" << svm_G;
+    // Linear (0) and INTER (5) only need C
     break;
   case 2:
     oss << "V=" << rtrees_V << " T=" << rtrees_T << " E=" << rtrees_E;
