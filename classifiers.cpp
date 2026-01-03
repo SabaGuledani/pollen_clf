@@ -84,13 +84,39 @@ fsiv_create_rtrees_classifier(int V,
                               int T,
                               float E)
 {
-    cv::Ptr<cv::ml::RTrees> rtrees;
     // TODO: Create an RTrees classifier.
     // REMEMBER: the parameters T and E are set using a cv::TermCriteria.
     // @see opencv docs.
 
-    //
-    CV_Assert(rtrees != nullptr);
+    // create RTrees classifier
+    cv::Ptr<cv::ml::RTrees> rtrees = cv::ml::RTrees::create();
+    
+    if (rtrees.empty() || rtrees.get() == nullptr)
+    {
+        throw std::runtime_error("Error: Failed to create RTrees classifier.");
+    }
+    
+    // set as classifier (not regression)
+    rtrees->setIsClassifier(true);
+    
+    // set number of features used per node (ActiveVarCount)
+    // if V is 0, use default (sqrt of total features)
+    if (V > 0)
+    {
+        rtrees->setActiveVarCount(V);
+    }
+    
+    // set termination criteria using T (max iterations) and E (epsilon/error)
+    // TermCriteria can combine MAX_ITER and EPS
+    cv::TermCriteria term_crit(cv::TermCriteria::MAX_ITER + cv::TermCriteria::EPS, T, static_cast<double>(E));
+    rtrees->setTermCriteria(term_crit);
+    
+    // set other useful parameters
+    rtrees->setMaxDepth(20);  // Maximum depth of trees
+    rtrees->setMinSampleCount(5);  // Minimum samples per leaf node
+    rtrees->setMaxCategories(15);  // Number of classes (15 pollen types)
+    rtrees->setCalculateVarImportance(true);  // Calculate variable importance
+    
     return rtrees;
 }
 
@@ -184,7 +210,8 @@ fsiv_load_rtrees_classifier_model(const std::string &model_fname)
     // TODO: load a RTrees classifier.
     // Hint: use the generic interface cv::Algorithm::load< classifier_type >
 
-    //
+    // load RTrees classifier from file
+    clsf = cv::Algorithm::load<cv::ml::RTrees>(model_fname);
 
     CV_Assert(clsf != nullptr);
     return clsf;
