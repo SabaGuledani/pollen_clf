@@ -96,8 +96,7 @@ fsiv_create_rtrees_classifier(int V,
         throw std::runtime_error("Error: Failed to create RTrees classifier.");
     }
     
-    // set as classifier (not regression)
-    rtrees->setIsClassifier(true);
+    // RTrees is a classifier by default, no need to set setIsClassifier
     
     // set number of features used per node (ActiveVarCount)
     // if V is 0, use default (sqrt of total features)
