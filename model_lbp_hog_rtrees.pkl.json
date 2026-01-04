@@ -1,0 +1,10 @@
+{
+  "feature_extractor": "LBP+HOG",
+  "feature_params": "2.0 8 4 4 64 64 16 16 16 9",
+  "classifier": "RTrees",
+  "classifier_type": 2,
+  "random_seed": 42,
+  "rtrees_V": 20,
+  "rtrees_T": 100,
+  "rtrees_E": 0
+}

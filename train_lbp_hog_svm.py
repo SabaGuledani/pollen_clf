@@ -23,8 +23,10 @@ from functools import partial
 
 # Machine Learning
 from sklearn.svm import SVC
+from sklearn.ensemble import RandomForestClassifier
 from sklearn.metrics import confusion_matrix, accuracy_score
 from sklearn.preprocessing import StandardScaler
+from sklearn.decomposition import PCA
 
 # For GPU acceleration (optional - requires cuML)
 CUML_AVAILABLE = False
@@ -534,6 +536,43 @@ def compute_accuracy(cmat: np.ndarray) -> float:
         return 0.0
 
 
+def create_rtrees_classifier(V: int = 0, T: int = 50, E: float = 0.1) -> RandomForestClassifier:
+    """Create Random Trees (Random Forest) classifier.
+    
+    Args:
+        V: Number of random features sampled per node (0 = sqrt of total features)
+        T: Max number of trees in the forest
+        E: OOB error to stop adding more trees (used for monitoring, sklearn doesn't support direct epsilon stopping)
+    
+    Returns:
+        Random Forest classifier
+    """
+    # Calculate max_features (V parameter)
+    # If V is 0, use 'sqrt' (default), otherwise use V
+    if V == 0:
+        max_features = 'sqrt'
+    else:
+        max_features = V
+    
+    # Create Random Forest classifier
+    # Note: sklearn doesn't support epsilon-based early stopping like OpenCV,
+    # so we use n_estimators (T) and can monitor oob_score
+    clf = RandomForestClassifier(
+        n_estimators=T,           # T: Max number of trees
+        max_features=max_features, # V: Features per node (0 = sqrt, matching C++ code)
+        max_depth=40,              # Maximum depth of trees (matching C++ code)
+        min_samples_leaf=5,        # Minimum samples per leaf node (matching C++ setMinSampleCount)
+        max_leaf_nodes=None,       # No limit on leaf nodes
+        n_jobs=-1,                # Use all CPUs
+        random_state=42,          # For reproducibility
+        oob_score=True,           # Calculate out-of-bag score (related to E parameter)
+        class_weight=None,         # Balanced classes
+        verbose=0
+    )
+    
+    return clf
+
+
 def create_svm_classifier(kernel: int = 0, C: float = 1.0, 
                          degree: float = 3.0, gamma: float = 1.0,
                          use_gpu: bool = False) -> SVC:
@@ -608,15 +647,23 @@ def train_classifier(dataset_path: str, train_set: str = "train", valid_set: str
                     hog_win_width: int = 64, hog_win_height: int = 64,
                     hog_block_size: int = 32, hog_block_stride: int = 16,
                     hog_cell_size: int = 16, hog_nbins: int = 9,
+                    # Classifier selection
+                    classifier: int = 1,  # 0: KNN (not implemented), 1: SVM, 2: RTrees
                     # SVM parameters
                     svm_kernel: int = 2, svm_C: float = 1.0,
                     svm_degree: float = 3.0, svm_gamma: float = 0.1,
+                    # RTrees parameters
+                    rtrees_V: int = 0, rtrees_T: int = 50, rtrees_E: float = 0.1,
                     # Other parameters
                     random_seed: int = 0, use_gpu: bool = False,
                     model_fname: Optional[str] = None,
                     results_csv: str = "experiment_results.csv",
-                    n_jobs: int = -1) -> dict:
-    """Train SVM classifier with LBP+HOG features.
+                    n_jobs: int = -1,
+                    # PCA parameters (to reduce overfitting)
+                    use_pca: bool = False,
+                    pca_components: Optional[int] = None,
+                    pca_variance: float = 0.95) -> dict:
+    """Train classifier (SVM or RTrees) with LBP+HOG features.
     
     Args:
         dataset_path: Path to dataset folder
@@ -632,15 +679,22 @@ def train_classifier(dataset_path: str, train_set: str = "train", valid_set: str
         hog_block_stride: HOG block stride
         hog_cell_size: HOG cell size
         hog_nbins: HOG number of bins
+        classifier: Classifier type (0: KNN not implemented, 1: SVM, 2: RTrees)
         svm_kernel: SVM kernel type (0:Linear, 1:Poly, 2:RBF, 3:Sigmoid, 4:CHI2, 5:INTER)
         svm_C: SVM C parameter
         svm_degree: SVM degree (for polynomial kernel)
         svm_gamma: SVM gamma parameter
+        rtrees_V: RTrees number of features per node (0 = sqrt of total features)
+        rtrees_T: RTrees max number of trees
+        rtrees_E: RTrees OOB error threshold (for monitoring)
         random_seed: Random seed (0 means use current time)
-        use_gpu: Whether to use GPU acceleration
+        use_gpu: Whether to use GPU acceleration (SVM only)
         model_fname: Model filename to save (None = don't save)
         results_csv: CSV file to save experiment results
         n_jobs: Number of parallel jobs for feature extraction (-1 = use all CPUs)
+        use_pca: Whether to apply PCA for dimensionality reduction (helps with overfitting)
+        pca_components: Number of PCA components (None = use variance threshold)
+        pca_variance: Variance threshold for PCA (0.95 = keep 95% of variance)
     
     Returns:
         Dictionary with training results
@@ -703,15 +757,55 @@ def train_classifier(dataset_path: str, train_set: str = "train", valid_set: str
     print(f"Extracted features use {total_memory_mb:.2f} Mb of memory.")
     print()
     
-    # Create SVM classifier
-    kernel_names = {0: "Linear", 1: "Polynomial", 2: "RBF", 3: "Sigmoid", 4: "CHI2", 5: "INTER"}
-    kernel_name = kernel_names.get(svm_kernel, f"Unknown({svm_kernel})")
-    print(f"Using a SVM classifier with K={svm_kernel} ({kernel_name}) C={svm_C} D={svm_degree} G={svm_gamma}")
+    # Apply PCA if requested (helps reduce overfitting)
+    pca = None
+    original_feature_dim = X_train.shape[1]  # Store original dimension before PCA
+    if use_pca:
+        print("Applying PCA for dimensionality reduction...")
+        if pca_components is not None:
+            # Use fixed number of components
+            pca = PCA(n_components=pca_components, random_state=random_seed)
+            print(f"  Using {pca_components} PCA components")
+        else:
+            # Use variance threshold
+            pca = PCA(n_components=pca_variance, random_state=random_seed)
+            print(f"  Using PCA to retain {pca_variance*100:.1f}% of variance")
+        
+        # Fit PCA on training data only
+        X_train = pca.fit_transform(X_train)
+        print(f"  Reduced features from {original_feature_dim} to {X_train.shape[1]} dimensions")
+        print(f"  Explained variance ratio: {pca.explained_variance_ratio_.sum():.4f}")
+        
+        # Transform validation data using the same PCA
+        if X_valid is not None:
+            X_valid = pca.transform(X_valid)
+            print(f"  Transformed validation features to {X_valid.shape[1]} dimensions")
+        print()
     
-    clf = create_svm_classifier(
-        kernel=svm_kernel, C=svm_C, degree=svm_degree, gamma=svm_gamma,
-        use_gpu=use_gpu
-    )
+    # Create classifier based on type
+    if classifier == 1:  # SVM
+        kernel_names = {0: "Linear", 1: "Polynomial", 2: "RBF", 3: "Sigmoid", 4: "CHI2", 5: "INTER"}
+        kernel_name = kernel_names.get(svm_kernel, f"Unknown({svm_kernel})")
+        print(f"Using a SVM classifier with K={svm_kernel} ({kernel_name}) C={svm_C} D={svm_degree} G={svm_gamma}")
+        
+        clf = create_svm_classifier(
+            kernel=svm_kernel, C=svm_C, degree=svm_degree, gamma=svm_gamma,
+            use_gpu=use_gpu
+        )
+        classifier_name = "SVM"
+        classifier_params = f"K={svm_kernel} C={svm_C}"
+        if svm_kernel == 1:  # Polynomial
+            classifier_params += f" D={svm_degree} G={svm_gamma}"
+        elif svm_kernel in [2, 3, 4]:  # RBF, Sigmoid, CHI2
+            classifier_params += f" G={svm_gamma}"
+    elif classifier == 2:  # RTrees
+        print(f"Using a RTrees classifier with V={rtrees_V} T={rtrees_T} E={rtrees_E}")
+        
+        clf = create_rtrees_classifier(V=rtrees_V, T=rtrees_T, E=rtrees_E)
+        classifier_name = "RTrees"
+        classifier_params = f"V={rtrees_V} T={rtrees_T} E={rtrees_E}"
+    else:
+        raise ValueError(f"Unknown classifier type: {classifier}. Use 1 for SVM or 2 for RTrees.")
     
     print()
     
@@ -724,11 +818,15 @@ def train_classifier(dataset_path: str, train_set: str = "train", valid_set: str
     
     # Compute training accuracy
     print("Computing training accuracy ...", end=" ")
-    y_train_pred = 0.5 #clf.predict(X_train)
-    # cmat_train = compute_confusion_matrix(y_train, y_train_pred, n_categories=15)
-    train_acc =  0.5 #compute_accuracy(cmat_train)
+    y_train_pred = clf.predict(X_train)
+    cmat_train = compute_confusion_matrix(y_train, y_train_pred, n_categories=15)
+    train_acc = compute_accuracy(cmat_train)
     print("done.")
-    # print(f"Training accuracy: {train_acc:.6f}")
+    print(f"Training accuracy: {train_acc:.6f}")
+    
+    # Print OOB score for RTrees if available
+    if classifier == 2 and hasattr(clf, 'oob_score_'):
+        print(f"Out-of-bag score: {clf.oob_score_:.6f}")
     print()
     
     # Compute validation accuracy
@@ -751,17 +849,40 @@ def train_classifier(dataset_path: str, train_set: str = "train", valid_set: str
         with open(model_fname, 'wb') as f:
             pickle.dump(clf, f)
         
+        # Save PCA if used
+        if pca is not None:
+            pca_fname = model_fname.replace('.pkl', '_pca.pkl')
+            with open(pca_fname, 'wb') as f:
+                pickle.dump(pca, f)
+            print(f"Saved PCA model to '{pca_fname}'.")
+        
         # Save feature extractor parameters
         model_info = {
             'feature_extractor': 'LBP+HOG',
             'feature_params': extractor_params,
-            'classifier': 'SVM',
-            'svm_kernel': svm_kernel,
-            'svm_C': svm_C,
-            'svm_degree': svm_degree,
-            'svm_gamma': svm_gamma,
-            'random_seed': random_seed
+            'classifier': classifier_name,
+            'classifier_type': classifier,
+            'random_seed': random_seed,
+            'use_pca': use_pca,
+            'original_feature_dim': original_feature_dim if use_pca else None,
+            'pca_feature_dim': X_train.shape[1] if use_pca else None,
+            'pca_explained_variance': float(pca.explained_variance_ratio_.sum()) if use_pca and pca is not None else None
         }
+        
+        # Add classifier-specific parameters
+        if classifier == 1:  # SVM
+            model_info.update({
+                'svm_kernel': svm_kernel,
+                'svm_C': svm_C,
+                'svm_degree': svm_degree,
+                'svm_gamma': svm_gamma
+            })
+        elif classifier == 2:  # RTrees
+            model_info.update({
+                'rtrees_V': rtrees_V,
+                'rtrees_T': rtrees_T,
+                'rtrees_E': rtrees_E
+            })
         
         info_fname = model_fname + '.json'
         with open(info_fname, 'w') as f:
@@ -788,18 +909,12 @@ def train_classifier(dataset_path: str, train_set: str = "train", valid_set: str
         predicted_final_score = 0.0
     
     # Write experiment results to CSV
-    classifier_params = f"K={svm_kernel} C={svm_C}"
-    if svm_kernel == 1:  # Polynomial
-        classifier_params += f" D={svm_degree} G={svm_gamma}"
-    elif svm_kernel in [2, 3, 4]:  # RBF, Sigmoid, CHI2
-        classifier_params += f" G={svm_gamma}"
-    
     timestamp = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
     
     # Create results dictionary
     results = {
         'Timestamp': timestamp,
-        'Classifier': 'SVM',
+        'Classifier': classifier_name,
         'Classifier_Params': classifier_params,
         'Extractor': extractor_name,
         'Extractor_Params': extractor_params,
@@ -830,32 +945,73 @@ def train_classifier(dataset_path: str, train_set: str = "train", valid_set: str
 
 if __name__ == '__main__':
     # Example usage - uncomment and modify as needed
+    
+    # Example 1: Train with SVM
     results = train_classifier(
-        dataset_path="./data/data_128/train",  # Adjust path as needed
+        dataset_path="./data/data/train",  # Adjust path as needed
         train_set="train",
         valid_set="valid",
         # LBP parameters
-        lbp_radius=1.5,
-        lbp_neighbors=6,
-        lbp_grid_rows=3,
-        lbp_grid_cols=3,
+        lbp_radius=2.0,
+        lbp_neighbors=8,
+        lbp_grid_rows=5,
+        lbp_grid_cols=5,
         # HOG parameters
-        hog_win_width=128,
-        hog_win_height=128,
-        hog_block_size=64,
-        hog_block_stride=32,
+        hog_win_width=64,
+        hog_win_height=64,
+        hog_block_size=32,
+        hog_block_stride=16,
         hog_cell_size=32,
-        hog_nbins=9,
+        hog_nbins=18,
+        # Classifier selection
+        classifier=1,  # 1: SVM, 2: RTrees
         # SVM parameters
-        svm_kernel=4,  # CHI2 (using RBF approximation)
-        svm_C=0.1,
-        svm_gamma=0.1,
+        svm_kernel=2,  # RBF
+        svm_C=2.0,
+        svm_gamma=2.0,
         random_seed=42,
         use_gpu=False,  # Use GPU if available, otherwise use CPU
+        # PCA parameters (to reduce overfitting)
+        use_pca=True,  # Enable PCA to reduce overfitting
+        pca_components=None,  # None = use variance threshold
+        pca_variance=0.85,  # Keep 95% of variance
         model_fname="model_lbp_hog_svm.pkl",
         results_csv="experiment_results.csv",
         n_jobs=-1  # Use all CPUs for multiprocessing
     )
+    # V_values = [0, 10, 20, 30, 50, 75, 100]
+    # T_values = [100, 200, 300, 400, 500]
+    # for V in V_values:
+    #     # for T in T_values:
+    #     results = train_classifier(
+    #     dataset_path="./data/data/train",  # Adjust path as needed
+    #     train_set="train",
+    #     valid_set="valid",
+    #     # LBP parameters
+    #     lbp_radius=2.0,
+    #     lbp_neighbors=8,
+    #     lbp_grid_rows=4,
+    #     lbp_grid_cols=4,
+    #     # HOG parameters
+    #     hog_win_width=64,
+    #     hog_win_height=64,
+    #     hog_block_size=16,
+    #     hog_block_stride=16,
+    #     hog_cell_size=16,
+    #     hog_nbins=9,
+    #     # Classifier selection
+    #     classifier=2,  # 1: SVM, 2: RTrees
+    #     # RTrees parameters
+    #     rtrees_V=V,    # 0 = sqrt of total features
+    #     rtrees_T=100,   # Number of trees
+    #     rtrees_E=0,  # OOB error threshold (for monitoring)
+    #     random_seed=42,
+    #     model_fname="model_lbp_hog_rtrees.pkl",
+    #     results_csv="experiment_results.csv",
+    #     n_jobs=-1  # Use all CPUs for multiprocessing
+    # )
+    # Example 2: Train with RTrees
+   
     
     print("\nTraining completed!")
     print(f"Training accuracy: {results['Train_Accuracy']:.6f}")
