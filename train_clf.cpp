@@ -38,6 +38,9 @@ const char *keys =
     "Default 0 meas sqrt(num. of total features).}"
     "{rtrees_T     |50    | Max num. of rtrees in the forest.}"
     "{rtrees_E     |0.1   | OOB error to stop adding more rtrees.}"
+    "{use_pca      |      | Enable PCA for dimensionality reduction (helps with overfitting).}"
+    "{pca_variance |0.85  | Variance threshold for PCA (0.0-1.0, e.g., 0.85 = keep 85% of variance).}"
+    "{pca_components|0    | Maximum number of PCA components (0 = use variance threshold).}"
     "{train_set    |train| Set from the dataset used to train.}"
     "{valid_set    |valid| Set from the dataset used to validation.}"
     "{@dataset     |<none>| Path to the dataset.}"
@@ -231,6 +234,9 @@ int main(int argc, char *const *argv)
     int rtrees_V = parser.get<int>("rtrees_V");
     int rtrees_T = parser.get<int>("rtrees_T");
     double rtrees_E = parser.get<double>("rtrees_E");
+    bool use_pca = parser.has("use_pca");
+    double pca_variance = parser.get<double>("pca_variance");
+    int pca_components = parser.get<int>("pca_components");
     size_t seed = parser.get<size_t>("rseed");
     if (!parser.check())
     {
@@ -310,6 +316,14 @@ int main(int argc, char *const *argv)
               << " Mb of memory." << std::endl;
     std::cout << std::endl;
 
+    // Apply PCA if requested (helps reduce overfitting)
+    cv::PCA pca;
+    int original_feature_dim = X_t.cols;
+    if (use_pca)
+    {
+        pca = fsiv_apply_pca(X_t, X_v, pca_variance, pca_components);
+    }
+
     cv::Ptr<cv::ml::StatModel> clsf;
     if (classifier == 0)
     {
@@ -368,8 +382,31 @@ int main(int argc, char *const *argv)
 
     // Second, save the feature extractor model.
     extractor->save_model(model_fname);
+    
+    // Third, save PCA model if used.
+    if (use_pca && !pca.eigenvectors.empty())
+    {
+        std::cout << "Saving PCA model ... ";
+        if (fsiv_save_pca_model(pca, model_fname))
+        {
+            std::cout << "done." << std::endl;
+        }
+        else
+        {
+            std::cout << "failed." << std::endl;
+        }
+    }
+    
     cv::FileStorage fs(model_fname, cv::FileStorage::APPEND);
     fs << "fsiv_random_seed" << static_cast<double>(seed);
+    fs << "fsiv_use_pca" << use_pca;
+    if (use_pca)
+    {
+        fs << "fsiv_pca_variance" << pca_variance;
+        fs << "fsiv_pca_components" << pca_components;
+        fs << "fsiv_original_feature_dim" << original_feature_dim;
+        fs << "fsiv_pca_feature_dim" << X_t.cols;
+    }
     fs.release();
 
     // Third, compute model size.

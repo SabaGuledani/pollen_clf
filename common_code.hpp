@@ -9,5 +9,6 @@
 #include "features.hpp"
 #include "metrics.hpp"
 #include "gray_levels_features.hpp"
+#include "pca.hpp"
 
 // Added your feature extractor headers here.
