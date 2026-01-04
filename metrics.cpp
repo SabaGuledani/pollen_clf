@@ -10,9 +10,6 @@ fsiv_compute_confusion_matrix(const cv::Mat &true_labels,
     CV_Assert(predicted_labels.type() == CV_32SC1);
     cv::Mat cmat = cv::Mat::zeros(n_categories, n_categories, CV_32F);
 
-    // TODO: Compute the confusion matrix.
-    // Remember: Rows are the Ground Truth. Cols are the predictions.
-
     // count predictions: row = true label, col = predicted label
     for (int i = 0; i < true_labels.rows; i++)
     {
@@ -32,9 +29,6 @@ fsiv_compute_recognition_rates(const cv::Mat &cmat)
     CV_Assert(!cmat.empty() && cmat.type() == CV_32FC1);
     CV_Assert(cmat.rows == cmat.cols);
     cv::Mat RR = cv::Mat::zeros(cmat.rows, 1, CV_32FC1);
-
-    // TODO
-    // Hint: Compute the recognition rate (RR) for the each category (row).
 
     // for each category: diagonal / row sum
     for (int i = 0; i < cmat.rows; i++)
@@ -63,11 +57,6 @@ float fsiv_compute_accuracy(const cv::Mat &cmat)
 
     float acc = 0.0;
 
-    // TODO: compute the accuracy.
-    // Hint: the accuracy is the rate of correct classifications
-    //   to the total.
-    // Remember: avoid zero divisions!!.
-
     // sum of diagonal (correct predictions) / total sum
     float diagonal_sum = 0.0f;
     float total_sum = static_cast<float>(cv::sum(cmat)[0]);
@@ -89,7 +78,6 @@ float fsiv_compute_accuracy(const cv::Mat &cmat)
 float fsiv_compute_mean_recognition_rate(const cv::Mat &RRs)
 {
     float m_rr = 0.0;
-    // TODO
 
     // compute mean of all recognition rates
     if (RRs.rows > 0)

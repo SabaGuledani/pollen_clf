@@ -5,11 +5,6 @@ fsiv_create_knn_classifier(int K)
 {
     cv::Ptr<cv::ml::KNearest> knn;
 
-    // TODO: Create an KNN classifier.
-    // Set algorithm type to BRUTE_FORCE.
-    // Set it as a classifier (setIsClassifier)
-    // Set hyperparameter K.
-
     // create KNN classifier
     knn = cv::ml::KNearest::create();
     // use brute force algorithm
@@ -30,11 +25,6 @@ fsiv_create_svm_classifier(int Kernel,
                            float gamma)
 {
     cv::Ptr<cv::ml::SVM> svm;
-    // TODO: Create an SVM classifier.
-    // Set algorithm type to C_SVC.
-    // Set it as a classifier (setIsClassifier)
-    // Set hyperparameters: C, kernel, Gamma, Degree.
-
     // create SVM classifier
     svm = cv::ml::SVM::create();
     // set type to C_SVC (multi-class classification)
@@ -84,10 +74,6 @@ fsiv_create_rtrees_classifier(int V,
                               int T,
                               float E)
 {
-    // TODO: Create an RTrees classifier.
-    // REMEMBER: the parameters T and E are set using a cv::TermCriteria.
-    // @see opencv docs.
-
     // create RTrees classifier
     cv::Ptr<cv::ml::RTrees> rtrees = cv::ml::RTrees::create();
     
@@ -123,8 +109,6 @@ void fsiv_train_classifier(cv::Ptr<cv::ml::StatModel> &clf,
                            cv::Mat const &X, cv::Mat const &y)
 {
     CV_Assert(clf != nullptr);
-    // TODO: train the classifier.
-
     // train with samples X and labels y
     clf->train(X, cv::ml::ROW_SAMPLE, y);
 
@@ -137,9 +121,6 @@ fsiv_predict_labels(cv::Ptr<cv::ml::StatModel> &clf, cv::Mat const &X)
     CV_Assert(clf != nullptr);
     CV_Assert(clf->isTrained());
     cv::Mat predictions;
-
-    // TODO: compute the predictions.
-    // Remember: convert the type of predicted labels to int32.
 
     // predict labels for samples
     clf->predict(X, predictions);
@@ -176,9 +157,6 @@ fsiv_load_knn_classifier_model(const std::string &model_fname)
 {
     cv::Ptr<cv::ml::StatModel> clsf;
 
-    // TODO: load a KNN classifier.
-    // Hint: use the generic interface cv::Algorithm::load< classifier_type >
-
     // load KNN classifier from file
     clsf = cv::Algorithm::load<cv::ml::KNearest>(model_fname);
 
@@ -191,9 +169,6 @@ fsiv_load_svm_classifier_model(const std::string &model_fname)
 {
     cv::Ptr<cv::ml::StatModel> clsf;
 
-    // TODO: load a SVM classifier.
-    // Hint: use the generic interface cv::Algorithm::load< classifier_type >
-
     // load SVM classifier from file
     clsf = cv::Algorithm::load<cv::ml::SVM>(model_fname);
 
@@ -205,9 +180,6 @@ cv::Ptr<cv::ml::StatModel>
 fsiv_load_rtrees_classifier_model(const std::string &model_fname)
 {
     cv::Ptr<cv::ml::StatModel> clsf;
-
-    // TODO: load a RTrees classifier.
-    // Hint: use the generic interface cv::Algorithm::load< classifier_type >
 
     // load RTrees classifier from file
     clsf = cv::Algorithm::load<cv::ml::RTrees>(model_fname);
