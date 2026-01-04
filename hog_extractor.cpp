@@ -75,20 +75,19 @@ HogExtractor::extract_features(const cv::Mat &img)
         img_uchar = img;
     }
     
-    // Create HOG descriptor
     cv::HOGDescriptor hog(
-        cv::Size(win_width, win_height),  // winSize
-        cv::Size(block_size, block_size),  // blockSize
-        cv::Size(block_stride, block_stride), // blockStride
-        cv::Size(cell_size, cell_size),    // cellSize
-        nbins                              // nbins
+        cv::Size(win_width, win_height),  
+        cv::Size(block_size, block_size), 
+        cv::Size(block_stride, block_stride), 
+        cv::Size(cell_size, cell_size),    
+        nbins                              
     );
     
-    // Compute HOG features
+    // compute HOG features
     std::vector<float> descriptors;
     std::vector<cv::Point> locations;
     
-    // Resize image to window size if needed
+    // resize image to window size if needed
     cv::Mat img_resized;
     if (img_uchar.cols != win_width || img_uchar.rows != win_height)
     {
@@ -101,7 +100,7 @@ HogExtractor::extract_features(const cv::Mat &img)
     
     hog.compute(img_resized, descriptors, cv::Size(0, 0), cv::Size(0, 0), locations);
     
-    // Convert to Mat (row vector)
+    // convert to Mat 
     cv::Mat features(1, static_cast<int>(descriptors.size()), CV_32FC1);
     for (size_t i = 0; i < descriptors.size(); ++i)
     {
@@ -119,7 +118,6 @@ cv::Mat fsiv_extract_hog_features(const cv::Mat &img)
     CV_Assert(!img.empty());
     CV_Assert(img.channels() == 1);
     
-    // just use the HogExtractor class to extract features
     HogExtractor extractor;
     return extractor.extract_features(img);
 }

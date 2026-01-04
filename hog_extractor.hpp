@@ -19,10 +19,6 @@ public:
     virtual const std::string &get_extractor_help() const override;
     virtual cv::Mat extract_features(const cv::Mat &img) override;
 
-    // This extractor does not need override these methods:
-    // virtual void train(const cv::Mat& samples) override;
-    // virtual bool save_model(std::string const& fname) const;
-    // virtual bool load_model(std::string const& fname);
 };
 
 /**
