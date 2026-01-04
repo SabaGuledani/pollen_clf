@@ -100,16 +100,6 @@ int main(int argc, char *const *argv)
     std::tie(X, y) = fsiv_extract_features(test_dataset, extractor);
     std::cout << "done." << std::endl;
 
-    // Load and apply PCA if it was used during training
-    cv::PCA pca = fsiv_load_pca_model(model_fname);
-    if (!pca.eigenvectors.empty())
-    {
-        std::cout << "Applying PCA transformation ... ";
-        fsiv_transform_pca(pca, X);
-        std::cout << "done." << std::endl;
-        std::cout << "Features reduced to " << X.cols << " dimensions after PCA." << std::endl;
-    }
-
     std::cout << std::endl;
     std::cout << "Computing predictions ... ";
     cv::Mat predicted_labels = fsiv_predict_labels(clsf, X);

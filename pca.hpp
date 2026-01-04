@@ -22,32 +22,4 @@ cv::PCA fsiv_apply_pca(cv::Mat &X_train, cv::Mat &X_valid,
                         double variance_threshold = 0.85, 
                         int max_components = 0);
 
-/**
- * @brief Transform data using a pre-trained PCA model.
- * 
- * @param pca Pre-trained PCA model
- * @param data Data to transform (will be modified in-place)
- * @pre pca is trained
- * @pre data.type() == CV_32FC1
- * @post data.cols == pca.eigenvectors.cols
- */
-void fsiv_transform_pca(const cv::PCA &pca, cv::Mat &data);
-
-/**
- * @brief Save PCA model to file.
- * 
- * @param pca PCA model to save
- * @param model_fname Model filename (will append PCA data to this file)
- * @return true if successful
- */
-bool fsiv_save_pca_model(const cv::PCA &pca, const std::string &model_fname);
-
-/**
- * @brief Load PCA model from file.
- * 
- * @param model_fname Model filename
- * @return Loaded PCA model
- * @post ret_v is valid (can check with pca.eigenvectors.empty())
- */
-cv::PCA fsiv_load_pca_model(const std::string &model_fname);
 

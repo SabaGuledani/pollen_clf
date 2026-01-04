@@ -383,20 +383,6 @@ int main(int argc, char *const *argv)
     // Second, save the feature extractor model.
     extractor->save_model(model_fname);
     
-    // Third, save PCA model if used.
-    if (use_pca && !pca.eigenvectors.empty())
-    {
-        std::cout << "Saving PCA model ... ";
-        if (fsiv_save_pca_model(pca, model_fname))
-        {
-            std::cout << "done." << std::endl;
-        }
-        else
-        {
-            std::cout << "failed." << std::endl;
-        }
-    }
-    
     cv::FileStorage fs(model_fname, cv::FileStorage::APPEND);
     fs << "fsiv_random_seed" << static_cast<double>(seed);
     fs << "fsiv_use_pca" << use_pca;
