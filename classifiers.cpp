@@ -24,34 +24,34 @@ fsiv_create_svm_classifier(int Kernel,
     svm->setType(cv::ml::SVM::C_SVC); // set type to C_SVC for multiclass
     svm->setC(C);
     
-    // set kernel type and kernel-specific parameters
+    // set kernel and params
     switch (Kernel)
     {
-    case 0: // Linear kernel
+    case 0: // Linear 
         svm->setKernel(cv::ml::SVM::LINEAR);
         break;
-    case 1: // Polynomial kernel
+    case 1: // Polynomial 
         svm->setKernel(cv::ml::SVM::POLY);
         svm->setDegree(degree);
         svm->setGamma(gamma);
         break;
-    case 2: // RBF kernel (best for image classification with histogram features)
+    case 2: // RBF 
         svm->setKernel(cv::ml::SVM::RBF);
         svm->setGamma(gamma);
         break;
-    case 3: // Sigmoid kernel
+    case 3: // Sigmoid 
         svm->setKernel(cv::ml::SVM::SIGMOID);
         svm->setGamma(gamma);
         break;
-    case 4: // CHI2 kernel
+    case 4: // CHI2 
         svm->setKernel(cv::ml::SVM::CHI2);
         svm->setGamma(gamma);
         break;
-    case 5: // INTER (intersection) kernel
+    case 5: // INTER
         svm->setKernel(cv::ml::SVM::INTER);
         break;
     default:
-        // Default to RBF if unknown kernel type
+        // default to RBF
         svm->setKernel(cv::ml::SVM::RBF);
         svm->setGamma(gamma);
         break;
@@ -66,33 +66,29 @@ fsiv_create_rtrees_classifier(int V,
                               int T,
                               float E)
 {
-    // create RTrees classifier
+    
     cv::Ptr<cv::ml::RTrees> rtrees = cv::ml::RTrees::create();
     
     if (rtrees.empty() || rtrees.get() == nullptr)
     {
         throw std::runtime_error("Error: Failed to create RTrees classifier.");
     }
-    
-    // RTrees is a classifier by default, no need to set setIsClassifier
-    
-    // set number of features used per node (ActiveVarCount)
-    // if V is 0, use default (sqrt of total features)
+
+    // set number of features used per node
     if (V > 0)
     {
         rtrees->setActiveVarCount(V);
     }
     
-    // set termination criteria using T (max iterations) and E (epsilon/error)
-    // TermCriteria can combine MAX_ITER and EPS
+    // set termination criteria using T max iterations and E epsilon
     cv::TermCriteria term_crit(cv::TermCriteria::MAX_ITER + cv::TermCriteria::EPS, T, static_cast<double>(E));
     rtrees->setTermCriteria(term_crit);
     
     // set other useful parameters
-    rtrees->setMaxDepth(20);  // Maximum depth of trees
-    rtrees->setMinSampleCount(5);  // Minimum samples per leaf node
-    rtrees->setMaxCategories(15);  // Number of classes (15 pollen types)
-    rtrees->setCalculateVarImportance(true);  // Calculate variable importance
+    rtrees->setMaxDepth(20);  
+    rtrees->setMinSampleCount(5);  
+    rtrees->setMaxCategories(15); 
+    rtrees->setCalculateVarImportance(true);
     
     return rtrees;
 }
@@ -101,7 +97,6 @@ void fsiv_train_classifier(cv::Ptr<cv::ml::StatModel> &clf,
                            cv::Mat const &X, cv::Mat const &y)
 {
     CV_Assert(clf != nullptr);
-    // train with samples X and labels y
     clf->train(X, cv::ml::ROW_SAMPLE, y);
 
     CV_Assert(clf->isTrained());
@@ -114,9 +109,9 @@ fsiv_predict_labels(cv::Ptr<cv::ml::StatModel> &clf, cv::Mat const &X)
     CV_Assert(clf->isTrained());
     cv::Mat predictions;
 
-    // predict labels for samples
+    // predict labels
     clf->predict(X, predictions);
-    // convert to int32 type
+    // convert to int32
     predictions.convertTo(predictions, CV_32SC1);
 
     CV_Assert(predictions.rows == X.rows);
@@ -149,7 +144,7 @@ fsiv_load_knn_classifier_model(const std::string &model_fname)
 {
     cv::Ptr<cv::ml::StatModel> clsf;
 
-    // load KNN classifier from file
+    // load KNN from file
     clsf = cv::Algorithm::load<cv::ml::KNearest>(model_fname);
 
     CV_Assert(clsf != nullptr);
@@ -161,7 +156,7 @@ fsiv_load_svm_classifier_model(const std::string &model_fname)
 {
     cv::Ptr<cv::ml::StatModel> clsf;
 
-    // load SVM classifier from file
+    // load SVM from file
     clsf = cv::Algorithm::load<cv::ml::SVM>(model_fname);
 
     CV_Assert(clsf != nullptr);
@@ -173,7 +168,7 @@ fsiv_load_rtrees_classifier_model(const std::string &model_fname)
 {
     cv::Ptr<cv::ml::StatModel> clsf;
 
-    // load RTrees classifier from file
+    // load RTrees from file
     clsf = cv::Algorithm::load<cv::ml::RTrees>(model_fname);
 
     CV_Assert(clsf != nullptr);
