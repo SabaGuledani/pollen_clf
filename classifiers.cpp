@@ -4,14 +4,9 @@ cv::Ptr<cv::ml::StatModel>
 fsiv_create_knn_classifier(int K)
 {
     cv::Ptr<cv::ml::KNearest> knn;
-
-    // create KNN classifier
     knn = cv::ml::KNearest::create();
-    // use brute force algorithm
     knn->setAlgorithmType(cv::ml::KNearest::BRUTE_FORCE);
-    // set as classifier (not regression)
     knn->setIsClassifier(true);
-    // set K parameter
     knn->setDefaultK(K);
 
     CV_Assert(knn != nullptr);
@@ -25,11 +20,8 @@ fsiv_create_svm_classifier(int Kernel,
                            float gamma)
 {
     cv::Ptr<cv::ml::SVM> svm;
-    // create SVM classifier
     svm = cv::ml::SVM::create();
-    // set type to C_SVC (multi-class classification)
-    svm->setType(cv::ml::SVM::C_SVC);
-    // set C parameter (regularization parameter)
+    svm->setType(cv::ml::SVM::C_SVC); // set type to C_SVC for multiclass
     svm->setC(C);
     
     // set kernel type and kernel-specific parameters

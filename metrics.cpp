@@ -10,7 +10,7 @@ fsiv_compute_confusion_matrix(const cv::Mat &true_labels,
     CV_Assert(predicted_labels.type() == CV_32SC1);
     cv::Mat cmat = cv::Mat::zeros(n_categories, n_categories, CV_32F);
 
-    // count predictions: row = true label, col = predicted label
+    // count predictions
     for (int i = 0; i < true_labels.rows; i++)
     {
         int true_label = true_labels.at<int>(i, 0);
@@ -79,7 +79,7 @@ float fsiv_compute_mean_recognition_rate(const cv::Mat &RRs)
 {
     float m_rr = 0.0;
 
-    // compute mean of all recognition rates
+    // mean of all recognition rates
     if (RRs.rows > 0)
     {
         float sum = 0.0f;

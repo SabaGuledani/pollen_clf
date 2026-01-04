@@ -95,4 +95,104 @@ cv::PCA fsiv_apply_pca(cv::Mat &X_train, cv::Mat &X_valid,
     return pca;
 }
 
+void fsiv_transform_pca(const cv::PCA &pca, cv::Mat &data)
+{
+    CV_Assert(!pca.eigenvectors.empty());
+    CV_Assert(data.type() == CV_32FC1);
+    
+    cv::Mat transformed = pca.project(data);
+    data = transformed;
+}
+
+bool fsiv_save_pca_model(const cv::PCA &pca, const std::string &model_fname)
+{
+    if (pca.eigenvectors.empty())
+    {
+        std::cerr << "Warning: PCA model is empty, cannot save." << std::endl;
+        return false;
+    }
+    
+    cv::FileStorage fs(model_fname, cv::FileStorage::APPEND);
+    if (!fs.isOpened())
+    {
+        std::cerr << "Error: Could not open file for appending PCA model: " << model_fname << std::endl;
+        return false;
+    }
+    
+    fs << "fsiv_pca_eigenvectors" << pca.eigenvectors;
+    fs << "fsiv_pca_eigenvalues" << pca.eigenvalues;
+    fs << "fsiv_pca_mean" << pca.mean;
+    
+    fs.release();
+    return true;
+}
+
+cv::PCA fsiv_load_pca_model(const std::string &model_fname)
+{
+    cv::PCA pca;
+    cv::FileStorage fs(model_fname, cv::FileStorage::READ);
+    
+    if (!fs.isOpened())
+    {
+        std::cerr << "Error: Could not open file for reading PCA model: " << model_fname << std::endl;
+        return pca;
+    }
+    
+    // Check if PCA was used
+    cv::FileNode node = fs["fsiv_use_pca"];
+    if (node.empty())
+    {
+        // PCA was not used during training
+        fs.release();
+        return pca;
+    }
+    
+    bool use_pca = false;
+    if (node.isInt())
+    {
+        use_pca = (node.operator int() != 0);
+    }
+    else if (node.isReal())
+    {
+        use_pca = (node.operator double() != 0.0);
+    }
+    
+    if (!use_pca)
+    {
+        // PCA was not used during training
+        fs.release();
+        return pca;
+    }
+    
+    // Load PCA components
+    node = fs["fsiv_pca_eigenvectors"];
+    if (node.empty())
+    {
+        std::cerr << "Error: Could not load 'fsiv_pca_eigenvectors' from file." << std::endl;
+        fs.release();
+        return pca;
+    }
+    node >> pca.eigenvectors;
+    
+    node = fs["fsiv_pca_eigenvalues"];
+    if (node.empty())
+    {
+        std::cerr << "Error: Could not load 'fsiv_pca_eigenvalues' from file." << std::endl;
+        fs.release();
+        return pca;
+    }
+    node >> pca.eigenvalues;
+    
+    node = fs["fsiv_pca_mean"];
+    if (node.empty())
+    {
+        std::cerr << "Error: Could not load 'fsiv_pca_mean' from file." << std::endl;
+        fs.release();
+        return pca;
+    }
+    node >> pca.mean;
+    
+    fs.release();
+    return pca;
+}
 
