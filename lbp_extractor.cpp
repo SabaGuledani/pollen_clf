@@ -108,7 +108,7 @@ LbpExtractor::extract_features(const cv::Mat &img)
     }
     
     // compute histograms
-    int hist_size = 1 << neighbors; // 2^neighbors bins
+    int hist_size = 1 << neighbors; // 2 in power of neighbors bins
     float range[] = {0, static_cast<float>(hist_size)};
     const float* hist_range = {range};
     
@@ -116,7 +116,8 @@ LbpExtractor::extract_features(const cv::Mat &img)
     
     if (grid_rows == 1 && grid_cols == 1)
     {
-        // single histogram for entire image
+        // if rows and cols are 1, compute single histogram for entire image
+        
         cv::Mat hist;
         cv::calcHist(&lbp_img, 1, 0, cv::Mat(), hist, 1, &hist_size, &hist_range, true, false);
         
@@ -129,7 +130,8 @@ LbpExtractor::extract_features(const cv::Mat &img)
     }
     else
     {
-        // spatial histogram: divide image into grid and compute histogram per cell
+        // if rows and cols are not 1 divide and compute 
+        // divide image into grid and compute histogram per cell
         int cell_height = img_uchar.rows / grid_rows;
         int cell_width = img_uchar.cols / grid_cols;
         

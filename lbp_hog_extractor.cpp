@@ -12,8 +12,7 @@
 
 static std::string name_{"LBP+HOG Combined Feature Extractor"};
 static std::string help_{
-    "  This extractor computes combined Local Binary Pattern (LBP) and Histogram of\n"
-    "  Oriented Gradients (HOG) features from the input image.\n"
+    "  This extractor computes combined LBP and HOG \n"
     "  Parameters: [lbp_radius] [lbp_neighbors] [lbp_grid_rows] [lbp_grid_cols] "
     "[hog_win_width] [hog_win_height] [hog_block_size] [hog_block_stride] [hog_cell_size] [hog_nbins]\n"
     "    LBP parameters:\n"
@@ -54,30 +53,30 @@ LbpHogExtractor::extract_features(const cv::Mat &img)
     CV_Assert(!img.empty());
     CV_Assert(img.channels() == 1);
     
-    // Preprocess: Apply histogram equalization to enhance contrast
-    // This improves feature extraction by normalizing image brightness
+    // Apply histogram equalization to enhance contrast
     cv::Mat img_preprocessed;
     if (img.type() == CV_8UC1)
     {
-        // Direct histogram equalization for 8-bit images
+        // histogram equalization for 8-bit images
         cv::equalizeHist(img, img_preprocessed);
     }
     else
     {
-        // Convert to 8-bit first, then equalize
+        // if not 8bit
+        // convert to 8-bit first then equalize
         cv::Mat img_8bit;
         img.convertTo(img_8bit, CV_8UC1);
         cv::equalizeHist(img_8bit, img_preprocessed);
     }
     
-    // Parse parameters
-    // LBP parameters (first 4)
+    // parse params
+    // LBP params
     float lbp_radius = (params_.size() > 0) ? params_[0] : 1.0f;
     int lbp_neighbors = (params_.size() > 1) ? static_cast<int>(params_[1]) : 8;
     int lbp_grid_rows = (params_.size() > 2) ? static_cast<int>(params_[2]) : 1;
     int lbp_grid_cols = (params_.size() > 3) ? static_cast<int>(params_[3]) : 1;
     
-    // HOG parameters (next 6)
+    // HOG params
     int hog_win_width = (params_.size() > 4) ? static_cast<int>(params_[4]) : img_preprocessed.cols;
     int hog_win_height = (params_.size() > 5) ? static_cast<int>(params_[5]) : img_preprocessed.rows;
     int hog_block_size = (params_.size() > 6) ? static_cast<int>(params_[6]) : 16;
@@ -85,14 +84,14 @@ LbpHogExtractor::extract_features(const cv::Mat &img)
     int hog_cell_size = (params_.size() > 8) ? static_cast<int>(params_[8]) : 8;
     int hog_nbins = (params_.size() > 9) ? static_cast<int>(params_[9]) : 9;
     
-    // Extract LBP features from preprocessed image
+    // extract lpb features
     LbpExtractor lbp_extractor;
     std::vector<float> lbp_params = {lbp_radius, static_cast<float>(lbp_neighbors), 
                                      static_cast<float>(lbp_grid_rows), static_cast<float>(lbp_grid_cols)};
     lbp_extractor.set_params(lbp_params);
     cv::Mat lbp_features = lbp_extractor.extract_features(img_preprocessed);
     
-    // Extract HOG features from preprocessed image
+    // extract hog features
     HogExtractor hog_extractor;
     std::vector<float> hog_params = {static_cast<float>(hog_win_width), static_cast<float>(hog_win_height),
                                       static_cast<float>(hog_block_size), static_cast<float>(hog_block_stride),
@@ -100,13 +99,12 @@ LbpHogExtractor::extract_features(const cv::Mat &img)
     hog_extractor.set_params(hog_params);
     cv::Mat hog_features = hog_extractor.extract_features(img_preprocessed);
     
-    // Normalize each feature type independently (L2 normalization)
-    // This ensures both feature types contribute equally
+    // l2 normalization
     cv::Mat lbp_normalized, hog_normalized;
     cv::normalize(lbp_features, lbp_normalized, 1.0, 0.0, cv::NORM_L2);
     cv::normalize(hog_features, hog_normalized, 1.0, 0.0, cv::NORM_L2);
     
-    // Concatenate LBP and HOG features horizontally
+    // concat lbp and hog 
     cv::Mat combined_features;
     cv::hconcat(lbp_normalized, hog_normalized, combined_features);
     
@@ -121,7 +119,6 @@ cv::Mat fsiv_extract_lbp_hog_features(const cv::Mat &img)
     CV_Assert(!img.empty());
     CV_Assert(img.channels() == 1);
     
-    // just use the LbpHogExtractor class to extract features
     LbpHogExtractor extractor;
     return extractor.extract_features(img);
 }

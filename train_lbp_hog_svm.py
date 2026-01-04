@@ -967,7 +967,7 @@ if __name__ == '__main__':
         classifier=1,  # 1: SVM, 2: RTrees
         # SVM parameters
         svm_kernel=2,  # RBF
-        svm_C=2.0,
+        svm_C=1.5,
         svm_gamma=4.0,
         random_seed=42,
         use_gpu=False,  # Use GPU if available, otherwise use CPU
