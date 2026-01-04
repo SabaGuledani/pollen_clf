@@ -1,6 +1,5 @@
 #include "pca.hpp"
 #include <opencv2/core.hpp>
-#include <opencv2/core/eigen.hpp>
 #include <iostream>
 #include <iomanip>
 #include <cmath>
