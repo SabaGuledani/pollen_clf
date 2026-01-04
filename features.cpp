@@ -8,18 +8,11 @@
 #include <opencv2/imgproc.hpp>
 #include <opencv2/highgui.hpp>
 #include "features.hpp"
-
-// TODO: add the include for each extractor to use.
-// Hint: use gray_levels_features.hpp and gray_levels_features.cpp as model to
-//   make yours.
 #include "gray_levels_features.hpp"
 #include "lbp_extractor.hpp"
 #include "hog_extractor.hpp"
 #include "lbp_hog_extractor.hpp"
-// #include "xxxxxx.hpp"
 
-// Remember: update CMakeLists.txt with the new files.
-//
 
 FeaturesExtractor::FEATURE_IDS
 FeaturesExtractor::get_extractor_type() const
@@ -52,13 +45,6 @@ cv::Ptr<FeaturesExtractor> FeaturesExtractor::create(FEATURE_IDS id)
         extractor = cv::makePtr<LbpHogExtractor>();
         break;
     }
-
-        // TODO: add here 'cases' for your features.
-        // case FSIV_XXXXX: {
-        //    extractor = cv::makePtr<FeatureExtractor>(new XXXXX());
-        //    break;
-        // }
-        //
 
     default:
     {

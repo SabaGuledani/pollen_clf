@@ -968,7 +968,7 @@ if __name__ == '__main__':
         # SVM parameters
         svm_kernel=2,  # RBF
         svm_C=2.0,
-        svm_gamma=2.0,
+        svm_gamma=4.0,
         random_seed=42,
         use_gpu=False,  # Use GPU if available, otherwise use CPU
         # PCA parameters (to reduce overfitting)

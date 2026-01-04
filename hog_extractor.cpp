@@ -10,7 +10,7 @@
 
 static std::string name_{"HOG Feature Extractor"};
 static std::string help_{
-    "  This extractor computes Histogram of Oriented Gradients (HOG) features from the input image.\n"
+    "  This extractor computes Histogram of Oriented Gradients (HOG) from the input image.\n"
     "  Parameters: [win_width] [win_height] [block_size] [block_stride] [cell_size] [nbins]\n"
     "    - win_width: Window width (default: image width)\n"
     "    - win_height: Window height (default: image height)\n"
@@ -44,7 +44,7 @@ HogExtractor::extract_features(const cv::Mat &img)
     CV_Assert(!img.empty());
     CV_Assert(img.channels() == 1);
     
-    // Get parameters with defaults
+    // get params
     int win_width = (params_.size() > 0) ? static_cast<int>(params_[0]) : img.cols;
     int win_height = (params_.size() > 1) ? static_cast<int>(params_[1]) : img.rows;
     int block_size = (params_.size() > 2) ? static_cast<int>(params_[2]) : 16;
@@ -52,7 +52,7 @@ HogExtractor::extract_features(const cv::Mat &img)
     int cell_size = (params_.size() > 4) ? static_cast<int>(params_[4]) : 8;
     int nbins = (params_.size() > 5) ? static_cast<int>(params_[5]) : 9;
     
-    // Ensure valid parameters
+    // ensure valid params
     if (win_width <= 0) win_width = img.cols;
     if (win_height <= 0) win_height = img.rows;
     if (block_size <= 0) block_size = 16;
@@ -60,11 +60,11 @@ HogExtractor::extract_features(const cv::Mat &img)
     if (cell_size <= 0) cell_size = 8;
     if (nbins <= 0) nbins = 9;
     
-    // Ensure window size doesn't exceed image size
+    // ensure window size < image size
     win_width = std::min(win_width, img.cols);
     win_height = std::min(win_height, img.rows);
     
-    // Convert to uchar if needed
+    // convert to uchar if needed
     cv::Mat img_uchar;
     if (img.type() != CV_8UC1)
     {

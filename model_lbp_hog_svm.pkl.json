@@ -1,15 +1,15 @@
 {
   "feature_extractor": "LBP+HOG",
-  "feature_params": "2.0 8 5 5 64 64 32 16 32 9",
+  "feature_params": "2.0 8 5 5 64 64 32 16 32 18",
   "classifier": "SVM",
   "classifier_type": 1,
   "random_seed": 42,
   "use_pca": true,
-  "original_feature_dim": 6481,
-  "pca_feature_dim": 411,
-  "pca_explained_variance": 0.8501525521278381,
+  "original_feature_dim": 6562,
+  "pca_feature_dim": 431,
+  "pca_explained_variance": 0.8500889539718628,
   "svm_kernel": 2,
   "svm_C": 2.0,
   "svm_degree": 3.0,
-  "svm_gamma": 2.0
+  "svm_gamma": 3.5
 }
