@@ -1,0 +1,10 @@
+{
+  "feature_extractor": "LBP+HOG",
+  "feature_params": "1.5 6 3 3 128 128 64 32 32 9",
+  "classifier": "SVM",
+  "svm_kernel": 4,
+  "svm_C": 0.5,
+  "svm_degree": 3.0,
+  "svm_gamma": 0.5,
+  "random_seed": 42
+}
