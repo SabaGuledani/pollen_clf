@@ -71,19 +71,19 @@ LbpExtractor::extract_features(const cv::Mat &img)
     CV_Assert(!img.empty());
     CV_Assert(img.channels() == 1);
     
-    // Get parameters with defaults
+    // get params
     float radius = (params_.size() > 0) ? params_[0] : 1.0f;
     int neighbors = (params_.size() > 1) ? static_cast<int>(params_[1]) : 8;
     int grid_rows = (params_.size() > 2) ? static_cast<int>(params_[2]) : 1;
     int grid_cols = (params_.size() > 3) ? static_cast<int>(params_[3]) : 1;
     
-    // Ensure valid parameters
+    // ensure valid params
     if (radius <= 0) radius = 1.0f;
     if (neighbors <= 0 || neighbors > 31) neighbors = 8; // Max 31 bits for int
     if (grid_rows <= 0) grid_rows = 1;
     if (grid_cols <= 0) grid_cols = 1;
     
-    // Convert to uchar if needed
+    // convert to uchar if needed
     cv::Mat img_uchar;
     if (img.type() != CV_8UC1)
     {
@@ -94,7 +94,7 @@ LbpExtractor::extract_features(const cv::Mat &img)
         img_uchar = img;
     }
     
-    // Compute LBP image
+    // compute LBP image
     cv::Mat lbp_img = cv::Mat::zeros(img_uchar.size(), CV_8UC1);
     int border = static_cast<int>(ceil(radius));
     
@@ -107,7 +107,7 @@ LbpExtractor::extract_features(const cv::Mat &img)
         }
     }
     
-    // Compute histogram(s)
+    // compute histograms
     int hist_size = 1 << neighbors; // 2^neighbors bins
     float range[] = {0, static_cast<float>(hist_size)};
     const float* hist_range = {range};
@@ -116,20 +116,20 @@ LbpExtractor::extract_features(const cv::Mat &img)
     
     if (grid_rows == 1 && grid_cols == 1)
     {
-        // Single histogram for entire image
+        // single histogram for entire image
         cv::Mat hist;
         cv::calcHist(&lbp_img, 1, 0, cv::Mat(), hist, 1, &hist_size, &hist_range, true, false);
         
-        // Normalize histogram
+        // normalize hist
         cv::normalize(hist, hist, 1.0, 0.0, cv::NORM_L1);
         
-        // Convert to row vector
+        // convert to row vector
         hist.convertTo(features, CV_32F);
         features = features.reshape(1, 1);
     }
     else
     {
-        // Spatial histogram: divide image into grid and compute histogram per cell
+        // spatial histogram: divide image into grid and compute histogram per cell
         int cell_height = img_uchar.rows / grid_rows;
         int cell_width = img_uchar.cols / grid_cols;
         
@@ -150,14 +150,14 @@ LbpExtractor::extract_features(const cv::Mat &img)
                 cv::Mat hist;
                 cv::calcHist(&cell, 1, 0, cv::Mat(), hist, 1, &hist_size, &hist_range, true, false);
                 
-                // Normalize histogram
+                // normalize hist
                 cv::normalize(hist, hist, 1.0, 0.0, cv::NORM_L1);
                 
                 histograms.push_back(hist);
             }
         }
         
-        // Concatenate all histograms into a single row vector
+        // concatenate all histograms into a single row vector
         features = cv::Mat(1, hist_size * grid_rows * grid_cols, CV_32F);
         int offset = 0;
         for (const auto &hist : histograms)
@@ -180,7 +180,6 @@ cv::Mat fsiv_extract_lbp_histogram(const cv::Mat &img)
     CV_Assert(!img.empty());
     CV_Assert(img.channels() == 1);
     
-    // just use the LbpExtractor class to extract features
     LbpExtractor extractor;
     return extractor.extract_features(img);
 }
