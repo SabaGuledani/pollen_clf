@@ -50,9 +50,6 @@ target_link_libraries(train_clf common_code)
 add_executable(test_clf test_clf.cpp)
 target_link_libraries(test_clf common_code)
 
-add_executable(predict_kaggle predict_kaggle.cpp)
-target_link_libraries(predict_kaggle common_code)
-
 add_test(NAME TestFSIVExtract01NormalizedGrayLevels COMMAND test_common_code fsiv_extract_01_normalized_graylevels)
 add_test(NAME TestFSIVCreateKNNClassifier COMMAND test_common_code fsiv_create_knn_classifier)
 add_test(NAME TestFSIVCreateSVMClassifier COMMAND test_common_code fsiv_create_svm_classifier)
