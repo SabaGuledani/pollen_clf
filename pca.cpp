@@ -15,29 +15,27 @@ cv::PCA fsiv_apply_pca(cv::Mat &X_train, cv::Mat &X_valid,
     int original_dim = X_train.cols;
     std::cout << "Applying PCA for dimensionality reduction..." << std::endl;
     
-    // Create PCA object
     cv::PCA pca;
     
-    // Compute PCA on training data with all components first to determine n_components
+    // Compute PCA on training set
     cv::PCA pca_full = cv::PCA(X_train, cv::Mat(), cv::PCA::DATA_AS_ROW, 0);
     
-    // Calculate cumulative explained variance
     cv::Mat eigenvalues = pca_full.eigenvalues.clone();
     double total_variance = cv::sum(eigenvalues)[0];
     
-    // Find number of components needed to retain variance_threshold
+    // calculate approximate number of components to retain variance
     int n_components = 0;
     double cumulative_variance = 0.0;
     
     if (max_components > 0 && max_components < eigenvalues.rows)
     {
-        // Use fixed number of components
+        // use max_components
         n_components = max_components;
         std::cout << "  Using " << n_components << " PCA components" << std::endl;
     }
     else
     {
-        // Use variance threshold
+        // use variance threshold to determine number of components
         for (int i = 0; i < eigenvalues.rows; ++i)
         {
             cumulative_variance += eigenvalues.at<float>(i, 0);
@@ -48,7 +46,7 @@ cv::PCA fsiv_apply_pca(cv::Mat &X_train, cv::Mat &X_valid,
             }
         }
         
-        // If we didn't reach threshold, use all components
+        // if we didnt reach threshold use all
         if (n_components == 0)
             n_components = eigenvalues.rows;
         
@@ -58,11 +56,10 @@ cv::PCA fsiv_apply_pca(cv::Mat &X_train, cv::Mat &X_valid,
         std::cout << "  Selected " << n_components << " components out of " << eigenvalues.rows << std::endl;
     }
     
-    // Compute PCA with the selected number of components
+    // compute PCA
     pca = cv::PCA(X_train, cv::Mat(), cv::PCA::DATA_AS_ROW, n_components);
     
-    // Calculate explained variance ratio from original eigenvalues
-    // The explained variance ratio is the sum of selected eigenvalues / sum of all eigenvalues
+    // calculate explained variance ratio
     double selected_variance = 0.0;
     for (int i = 0; i < n_components && i < eigenvalues.rows; ++i)
     {
@@ -74,7 +71,7 @@ cv::PCA fsiv_apply_pca(cv::Mat &X_train, cv::Mat &X_valid,
         explained_variance_ratio = selected_variance / total_variance;
     }
     
-    // Transform training data
+    // transform training set
     cv::Mat X_train_transformed = pca.project(X_train);
     X_train = X_train_transformed;
     
@@ -82,7 +79,7 @@ cv::PCA fsiv_apply_pca(cv::Mat &X_train, cv::Mat &X_valid,
     std::cout << "  Explained variance ratio: " << std::fixed << std::setprecision(4) 
               << explained_variance_ratio << std::endl;
     
-    // Transform validation data if provided
+    // transform validation set 
     if (!X_valid.empty())
     {
         cv::Mat X_valid_transformed = pca.project(X_valid);
@@ -142,7 +139,7 @@ cv::PCA fsiv_load_pca_model(const std::string &model_fname)
     cv::FileNode node = fs["fsiv_use_pca"];
     if (node.empty())
     {
-        // PCA was not used during training
+        // PCA was not used 
         fs.release();
         return pca;
     }
@@ -159,12 +156,12 @@ cv::PCA fsiv_load_pca_model(const std::string &model_fname)
     
     if (!use_pca)
     {
-        // PCA was not used during training
+        // PCA was not used 
         fs.release();
         return pca;
     }
     
-    // Load PCA components
+    // load PCA components
     node = fs["fsiv_pca_eigenvectors"];
     if (node.empty())
     {

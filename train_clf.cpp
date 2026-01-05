@@ -106,14 +106,14 @@ get_classifier_params(int classifier, int knn_K, float svm_C, int svm_K, float s
     break;
   case 1:
     oss << "K=" << svm_K << " C=" << svm_C;
-    // Add kernel-specific parameters
-    if (svm_K == 1) // Polynomial
+    // add params
+    if (svm_K == 1) // polynomial
       oss << " D=" << svm_D << " G=" << svm_G;
-    else if (svm_K == 2 || svm_K == 3 || svm_K == 4) // RBF, Sigmoid, CHI2
+    else if (svm_K == 2 || svm_K == 3 || svm_K == 4) // rbf, sigmoid, chi2
       oss << " G=" << svm_G;
-    // Linear (0) and INTER (5) only need C
     break;
   case 2:
+    //params for rtrees
     oss << "V=" << rtrees_V << " T=" << rtrees_T << " E=" << rtrees_E;
     break;
   }
@@ -148,14 +148,14 @@ write_experiment_results(const std::string &csv_file,
     return false;
   }
 
-  // Write header if file is new
+  // write header if file is new
   if (!file_exists)
   {
     out_file << "Timestamp,Classifier,Classifier_Params,Extractor,Extractor_Params,"
              << "Train_Accuracy,Valid_Accuracy,Test_Accuracy,Model_Size_MB,Size_Score,Predicted_Final_Score,Model_Filename" << std::endl;
   }
 
-  // Get current timestamp
+  // get current time
   time_t rawtime;
   struct tm *timeinfo;
   char buffer[80];
@@ -164,7 +164,7 @@ write_experiment_results(const std::string &csv_file,
   strftime(buffer, sizeof(buffer), "%Y-%m-%d %H:%M:%S", timeinfo);
   std::string timestamp(buffer);
 
-  // Write data row
+  // write data row
   out_file << std::fixed << std::setprecision(6);
   out_file << timestamp << ","
            << classifier_name << ","
@@ -173,7 +173,7 @@ write_experiment_results(const std::string &csv_file,
            << "\"" << extractor_params << "\","
            << train_accuracy << ","
            << (valid_accuracy >= 0.0f ? std::to_string(valid_accuracy) : "N/A") << ","
-           << "N/A" << ","  // Test accuracy (computed separately, can be filled manually)
+           << "N/A" << "," // should be test accuracy but I dont think I need it now
            << model_size_mb << ","
            << size_score << ","
            << predicted_final_score << ","
@@ -316,7 +316,7 @@ int main(int argc, char *const *argv)
               << " Mb of memory." << std::endl;
     std::cout << std::endl;
 
-    // Apply PCA if requested (helps reduce overfitting)
+    // apply PCA if requested
     cv::PCA pca;
     int original_feature_dim = X_t.cols;
     if (use_pca)
@@ -377,13 +377,13 @@ int main(int argc, char *const *argv)
 
     std::cout << "Saving the model to '" << model_fname << "'." << std::endl;
 
-    // First, save the classifier's model.
+    // save the classifier
     fsiv_save_classifier_model(clsf, model_fname);
 
-    // Second, save the feature extractor model.
+    // save the feature extractor
     extractor->save_model(model_fname);
     
-    // Third, save PCA model if used.
+    // save PCA model if used
     if (use_pca && !pca.eigenvectors.empty())
     {
         std::cout << "Saving PCA model ... ";
@@ -409,7 +409,7 @@ int main(int argc, char *const *argv)
     }
     fs.release();
 
-    // Third, compute model size.
+    // compute model size
     size_t model_size = 0;
     float model_size_mb = 0.0f;
     float size_score = 0.0f;
@@ -429,7 +429,7 @@ int main(int argc, char *const *argv)
     else
       throw std::runtime_error("Error: could not open the file " + model_fname);
 
-    // Write experiment results to CSV
+    // write experiment results to csv
     std::string csv_file = "experiment_results.csv";
     std::string classifier_name = get_classifier_name(classifier);
     std::string classifier_params = get_classifier_params(classifier, knn_K, svm_C, svm_K, svm_D, svm_G,
