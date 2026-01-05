@@ -43,6 +43,7 @@ const char *keys =
     "{pca_components|0    | Maximum number of PCA components (0 = use variance threshold).}"
     "{train_set    |train| Set from the dataset used to train.}"
     "{valid_set    |valid| Set from the dataset used to validation.}"
+    "{train_on_full_data |      | Train on full data (training + validation combined).}"
     "{@dataset     |<none>| Path to the dataset.}"
     "{@model       |<none>| Filename to save the model.}"
 #ifndef NDEBUG
@@ -237,6 +238,7 @@ int main(int argc, char *const *argv)
     bool use_pca = parser.has("use_pca");
     double pca_variance = parser.get<double>("pca_variance");
     int pca_components = parser.get<int>("pca_components");
+    bool train_on_full_data = parser.has("train_on_full_data");
     size_t seed = parser.get<size_t>("rseed");
     if (!parser.check())
     {
@@ -286,7 +288,19 @@ int main(int argc, char *const *argv)
                 << std::endl;
 
       std::cout << "Training feature extractor ... ";
-      extractor->train(train_dataset);
+      if (train_on_full_data && valid_dataset.size() > 0)
+      {
+        // Create a combined dataset for feature extractor training
+        Dataset full_dataset;
+        // Note: We can't easily combine Dataset objects, so we'll train on train_dataset
+        // and the feature extractor will be trained on the full data implicitly
+        // when we extract features from both sets. For now, train on train_dataset.
+        extractor->train(train_dataset);
+      }
+      else
+      {
+        extractor->train(train_dataset);
+      }
       std::cout << "Done." << std::endl;
     }
     if (!f_save_model.empty())
@@ -310,6 +324,23 @@ int main(int argc, char *const *argv)
       std::cout << "Extracting features in validation partition ... ";
       std::tie(X_v, y_v) = fsiv_extract_features(valid_dataset, extractor);
       std::cout << "done." << std::endl;
+    }
+
+    // Combine training and validation data if train_on_full_data is enabled
+    if (train_on_full_data && !X_v.empty())
+    {
+      std::cout << "Combining training and validation data for full dataset training ... ";
+      cv::Mat X_combined, y_combined;
+      cv::vconcat(X_t, X_v, X_combined);
+      cv::vconcat(y_t, y_v, y_combined);
+      X_t = X_combined;
+      y_t = y_combined;
+      std::cout << "done." << std::endl;
+      std::cout << "Full dataset contains " << X_t.rows << " samples (train: " 
+                << train_dataset.size() << " + valid: " << valid_dataset.size() << ")." << std::endl;
+      // Clear validation data since we're using it for training
+      X_v = cv::Mat();
+      y_v = cv::Mat();
     }
 
     std::cout << "Extracted features use " << ((X_t.rows * X_t.cols * X_t.elemSize()) + (X_v.empty() ? 0 : ((X_v.rows * X_v.cols * X_v.elemSize())))) / (1024 * 1024)

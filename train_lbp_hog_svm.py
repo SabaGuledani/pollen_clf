@@ -962,7 +962,7 @@ if __name__ == '__main__':
         hog_block_size=32,
         hog_block_stride=16,
         hog_cell_size=32,
-        hog_nbins=18,
+        hog_nbins=9,
         # Classifier selection
         classifier=1,  # 1: SVM, 2: RTrees
         # SVM parameters
